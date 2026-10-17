@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EntropyChain Miner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img src="icon.png" alt="" class="logo">
+      <span class="title">EntropyChain Miner</span>
+      <span class="badge" id="network">TESTNET</span>
+    </div>
+    <div class="menu-wrap">
+      <button class="ghost" id="manageBtn" aria-haspopup="true" aria-expanded="false">Manage ▾</button>
+      <div class="menu" id="manageMenu" hidden>
+        <button data-action="export">Export private key…</button>
+        <button data-action="backup">Download wallet backup…</button>
+        <button data-action="folder">Open data folder</button>
+        <button data-action="explorer">View on explorer ↗</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="account-bar">
+    <label class="sr" for="accountSelect">Account</label>
+    <select id="accountSelect"></select>
+    <button class="ghost small" id="addAccountBtn">+ Add account</button>
+    <code class="addr" id="activeAddr">—</code>
+    <button class="ghost small" id="copyBtn">Copy</button>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab active" data-tab="mine">Mine</button>
+    <button role="tab" class="tab" data-tab="wallet">Wallet</button>
+    <button role="tab" class="tab" data-tab="tokens">Tokens</button>
+    <button role="tab" class="tab" data-tab="nfts">NFTs <span class="count" id="nftCount" hidden></span></button>
+    <button role="tab" class="tab" data-tab="lotteries">Lotteries <span class="count" id="lotCount" hidden></span></button>
+  </nav>
+
+  <main>
+    <!-- MINE -->
+    <section class="pane" id="pane-mine">
+      <div class="panel">
+        <h2>Live stats</h2>
+        <div class="stats">
+          <div class="stat"><span class="k">Status</span><span class="v" id="sStatus">Starting…</span></div>
+          <div class="stat"><span class="k">Block height</span><span class="v" id="sHeight">—</span></div>
+          <div class="stat"><span class="k">Peers</span><span class="v" id="sPeers">—</span></div>
+          <div class="stat"><span class="k">Hash rate</span><span class="v" id="sRate">—</span></div>
+          <div class="stat"><span class="k">Blocks found</span><span class="v" id="sMined">0</span></div>
+          <div class="stat"><span class="k">Balance</span><span class="v accent" id="sBalance">—</span></div>
+        </div>
+        <div class="substats" id="sSub"></div>
+      </div>
+      <div class="action-row">
+        <div class="threads">
+          <label for="threads">CPU threads <b id="threadsVal">1</b></label>
+          <input type="range" id="threads" min="1" max="4" value="1">
+        </div>
+        <button class="primary big" id="mineBtn">▶ Start mining</button>
+      </div>
+      <div class="panel grow">
+        <h2>Log</h2>
+        <pre class="log" id="log"></pre>
+      </div>
+    </section>
+
+    <!-- WALLET -->
+    <section class="pane" id="pane-wallet" hidden>
+      <div class="cols">
+        <div class="panel">
+          <div class="panel-head"><h2>Balances</h2><button class="ghost small" id="refreshBtn">Refresh</button></div>
+          <div id="balances" class="list"></div>
+        </div>
+        <div class="panel">
+          <h2>Send</h2>
+          <form id="sendForm" class="form">
+            <label>Recipient address<input id="sendTo" placeholder="E… (recipient address)" autocomplete="off" spellcheck="false" required></label>
+            <div class="row">
+              <label class="grow">Amount<input id="sendAmount" placeholder="0.0" inputmode="decimal" required></label>
+              <label>Token<select id="sendToken"></select></label>
+            </div>
+            <label>Fee (smallest units)<input id="sendFee" type="number" min="0" value="10"></label>
+            <div class="form-foot"><span class="msg" id="sendMsg"></span><button class="primary" type="submit">Send</button></div>
+          </form>
+        </div>
+      </div>
+      <div class="panel grow">
+        <h2>Recent activity</h2>
+        <div id="history" class="list"></div>
+      </div>
+    </section>
+
+    <!-- TOKENS -->
+    <section class="pane" id="pane-tokens" hidden>
+      <div class="panel">
+        <h2>Tokens you created</h2>
+        <div id="myTokens" class="list"></div>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <h2>Create token</h2>
+          <form id="createForm" class="form">
+            <div class="row">
+              <label>Symbol<input id="ctSymbol" placeholder="3-8 letters" maxlength="12" required></label>
+              <label class="grow">Name<input id="ctName" placeholder="Display name" required></label>
+            </div>
+            <div class="row">
+              <label class="grow">Total supply<input id="ctSupply" placeholder="1000000 (whole tokens)" inputmode="decimal" required></label>
+              <label>Decimals<input id="ctDecimals" type="number" min="0" max="18" value="8"></label>
+            </div>
+            <div class="form-foot"><span class="msg" id="createMsg"></span><button class="primary" type="submit">Create token</button></div>
+            <p class="hint">Fee: 100 units. The full supply goes to your active account.</p>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>Mint more of a token</h2>
+          <form id="mintForm" class="form">
+            <div class="row">
+              <label>Symbol<select id="mtSymbol"></select></label>
+              <label class="grow">Amount<input id="mtAmount" placeholder="0.0" inputmode="decimal" required></label>
+            </div>
+            <label>Recipient<input id="mtTo" placeholder="E… (defaults to your address)" spellcheck="false"></label>
+            <div class="form-foot"><span class="msg" id="mintMsg"></span><button class="primary" type="submit">Mint</button></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- NFTS -->
+    <section class="pane" id="pane-nfts" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>NFTs you own</h2><span class="hint">To create a collection or mint, use the web wallet.</span></div>
+        <div id="nftGrid" class="nft-grid"></div>
+      </div>
+    </section>
+
+    <!-- LOTTERIES -->
+    <section class="pane" id="pane-lotteries" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>Lotteries</h2><span class="hint">Tickets are paid in ENTRO. Winners are picked from future block beacons — nobody can rig the draw.</span></div>
+        <div id="lotList" class="list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="version">—</span>
+    <a href="#" id="siteLink">entropychain.io ↗</a>
+  </footer>
+
+  <!-- First-run setup -->
+  <div class="overlay" id="setup" hidden>
+    <div class="dialog wide">
+      <h1>Welcome to EntropyChain</h1>
+      <p class="muted">You need a wallet to mine. Create a new one, or import a private key you already have.</p>
+      <div class="seg" role="tablist">
+        <button class="seg-btn active" data-seg="create">Create new wallet</button>
+        <button class="seg-btn" data-seg="import">Import private key</button>
+      </div>
+      <form id="setupCreate" class="form">
+        <label>Account label<input id="setupLabel" value="default"></label>
+        <p class="hint">Your key is stored in <code id="setupPath"></code>. Back it up from <b>Manage → Download wallet backup</b>.</p>
+        <div class="form-foot"><span class="msg" id="setupMsg"></span><button class="primary" type="submit">Create wallet</button></div>
+      </form>
+      <form id="setupImport" class="form" hidden>
+        <label>Private key (hex)<input id="setupKey" type="password" placeholder="64 hexadecimal characters" autocomplete="off" spellcheck="false"></label>
+        <label>Account label<input id="setupImportLabel" value="imported"></label>
+        <div class="form-foot"><span class="msg" id="setupImportMsg"></span><button class="primary" type="submit">Import wallet</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add account -->
+  <div class="overlay" id="addDialog" hidden>
+    <div class="dialog">
+      <h1>Add account</h1>
+      <div class="seg">
+        <button class="seg-btn active" data-seg="gen">Generate new</button>
+        <button class="seg-btn" data-seg="imp">Import key</button>
+      </div>
+      <form id="addForm" class="form">
+        <label>Account label<input id="addLabel" placeholder="e.g. trading, savings"></label>
+        <label id="addKeyRow" hidden>Private key (hex)<input id="addKey" type="password" placeholder="64 hexadecimal characters" autocomplete="off" spellcheck="false"></label>
+        <div class="form-foot"><span class="msg" id="addMsg"></span>
+          <button type="button" class="ghost" data-close>Cancel</button>
+          <button class="primary" type="submit">Add account</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export key -->
+  <div class="overlay" id="exportDialog" hidden>
+    <div class="dialog">
+      <h1>Export private key</h1>
+      <p class="warn">Anyone with this key controls the account's funds. Never share it or paste it into a website.</p>
+      <p class="muted">Account <code id="exportAddr"></code></p>
+      <label><span>Type <b>CONFIRM</b> to reveal the key</span><input id="exportConfirm" placeholder="CONFIRM" autocomplete="off"></label>
+      <code class="secret" id="exportKey" hidden></code>
+      <div class="form-foot"><span class="msg" id="exportMsg"></span>
+        <button class="ghost" id="exportCopy" hidden>Copy to clipboard</button>
+        <button class="primary" data-close>Done</button></div>
+    </div>
+  </div>
+
+  <!-- Send NFT -->
+  <div class="overlay" id="sendNftDialog" hidden>
+    <div class="dialog">
+      <h1>Send NFT</h1>
+      <p class="muted" id="sendNftName"></p>
+      <form id="sendNftForm" class="form">
+        <label>Recipient address<input id="sendNftTo" placeholder="E… (recipient address)" autocomplete="off" spellcheck="false" required></label>
+        <p class="hint">Fee: 1 unit. Transfers cannot be undone.</p>
+        <div class="form-foot"><span class="msg" id="sendNftMsg"></span>
+          <button type="button" class="ghost" data-close>Cancel</button>
+          <button class="primary" type="submit">Send</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm -->
+  <div class="overlay" id="confirmDialog" hidden>
+    <div class="dialog">
+      <h1 id="confirmTitle">Confirm</h1>
+      <p id="confirmText"></p>
+      <div class="form-foot"><span></span>
+        <button class="ghost" id="confirmNo">Cancel</button>
+        <button class="primary" id="confirmYes">Confirm</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

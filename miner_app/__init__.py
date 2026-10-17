@@ -1,0 +1,1 @@
+"""EntropyChain desktop miner GUI."""

@@ -1,0 +1,2237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EntropyChain Wallet</title>
+<style>
+:root {
+  --bg: #0a0e14;
+  --panel: #111821;
+  --panel-2: #161f2c;
+  --border: #1f2a3a;
+  --text: #c8d3e0;
+  --muted: #6b7a8e;
+  --accent: #00d4aa;
+  --accent-2: #ff6b9d;
+  --warn: #ffb454;
+  --error: #ff5577;
+  --mono: 'SF Mono', 'Consolas', 'Menlo', monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  font-size: 14px; line-height: 1.5;
+}
+header {
+  background: var(--panel); border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+}
+.logo { font-weight: 700; font-size: 18px; color: var(--accent); letter-spacing: 0.5px; }
+.logo span { color: var(--accent-2); }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px;
+  background: var(--panel-2); border: 1px solid var(--warn); color: var(--warn);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.spacer { flex: 1; }
+.network-status {
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+}
+.network-status .ok { color: var(--accent); }
+.network-status .err { color: var(--error); }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+/* Onboarding screens */
+.onboard {
+  max-width: 480px; margin: 80px auto;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 32px;
+}
+.onboard h1 { margin: 0 0 8px 0; font-size: 24px; }
+.onboard p.lede { color: var(--muted); margin-bottom: 24px; }
+.onboard .choice {
+  display: block; padding: 14px 16px; margin-bottom: 12px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.onboard .choice:hover { border-color: var(--accent); }
+.onboard .choice strong { color: var(--accent); display: block; margin-bottom: 4px; }
+.onboard .choice span { color: var(--muted); font-size: 13px; }
+
+input, textarea, select {
+  width: 100%; padding: 10px 12px; background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px; font-family: var(--mono);
+  font-size: 13px;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none; border-color: var(--accent);
+}
+label {
+  display: block; margin-top: 16px; margin-bottom: 6px;
+  color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+button {
+  background: var(--accent); color: var(--bg); border: none; border-radius: 4px;
+  padding: 10px 18px; font-weight: 600; cursor: pointer; font-size: 14px;
+  margin-top: 16px;
+}
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+}
+button.danger { background: var(--error); color: white; }
+
+.error-msg { color: var(--error); margin-top: 12px; font-size: 13px; }
+.success-msg { color: var(--accent); margin-top: 12px; font-size: 13px; }
+
+/* Main wallet UI */
+.tabs {
+  display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  gap: 4px;
+}
+.tab {
+  padding: 12px 20px; cursor: pointer; color: var(--muted);
+  border-bottom: 2px solid transparent; font-size: 14px; font-weight: 500;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+  margin-bottom: 16px;
+}
+.panel h2 {
+  margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border);
+  font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-weight: 600;
+}
+.panel-body { padding: 18px; }
+
+.address-bar {
+  display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+  font-family: var(--mono); font-size: 13px; color: var(--accent-2);
+  word-break: break-all;
+  position: relative;
+}
+.address-bar button {
+  margin-top: 0; padding: 4px 10px; font-size: 11px;
+  background: transparent; color: var(--muted); border: 1px solid var(--border);
+}
+.address-bar .addr-text {
+  flex: 1 1 auto; min-width: 0;
+}
+.account-switcher {
+  position: relative; display: inline-block;
+  margin-right: 6px;
+}
+.account-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--accent); font-size: 11px;
+  cursor: pointer; user-select: none;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.account-pill:hover { border-color: var(--accent); }
+.account-pill .caret { color: var(--muted); font-size: 9px; }
+
+.account-menu {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  min-width: 320px; max-width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border-bright, var(--border));
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 50;
+  overflow: hidden;
+}
+.account-menu .item {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.account-menu .item:hover { background: var(--panel-2); }
+.account-menu .item .marker {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: transparent; flex-shrink: 0;
+}
+.account-menu .item.active .marker { background: var(--accent); }
+.account-menu .item .label-col {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.account-menu .item .label-col .label-row {
+  color: var(--text); font-weight: 500; font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.account-menu .item .label-col .addr-row {
+  color: var(--accent-2); font-size: 11px;
+}
+.account-menu .add-action {
+  padding: 10px 14px; cursor: pointer;
+  background: var(--panel-2);
+  color: var(--accent);
+  font-size: 12px; font-family: var(--mono);
+  border-top: 1px solid var(--border);
+}
+.account-menu .add-action:hover { background: var(--bg); }
+
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+  padding: 20px;
+}
+.modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 24px; max-width: 480px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h2 {
+  margin-top: 0; margin-bottom: 14px; font-size: 18px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+}
+.modal p.lede {
+  color: var(--muted); margin-bottom: 16px; font-size: 13px;
+}
+.modal .modal-actions {
+  display: flex; gap: 10px; margin-top: 16px;
+  flex-wrap: wrap;
+}
+.modal .modal-actions button {
+  margin-top: 0; flex: 1; min-width: 100px;
+}
+.modal .key-display {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 14px;
+  font-family: var(--mono); font-size: 12px;
+  word-break: break-all; line-height: 1.6;
+  color: var(--accent-2);
+  margin-top: 12px;
+  user-select: all;
+}
+.modal .key-display.hidden {
+  color: transparent; text-shadow: 0 0 8px var(--muted);
+  cursor: pointer; user-select: none;
+  position: relative;
+}
+.modal .key-display.hidden::after {
+  content: "Click to reveal";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-family: -apple-system, sans-serif;
+  font-size: 12px; letter-spacing: 0.05em;
+  background: var(--bg);
+  border-radius: 3px;
+}
+.modal-tabs {
+  display: flex; gap: 4px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-tab {
+  padding: 8px 14px; cursor: pointer; color: var(--muted);
+  font-size: 12px; border-bottom: 2px solid transparent;
+}
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.warn-modal {
+  background: rgba(255, 180, 84, 0.06); border: 1px solid var(--warn);
+  border-radius: 4px; padding: 12px 14px; margin-bottom: 14px;
+  font-size: 12px; color: var(--warn); line-height: 1.6;
+}
+
+.balance-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.balance-row:last-child { border-bottom: none; }
+.balance-row .symbol { font-weight: 600; }
+.balance-row .symbol.native { color: var(--accent); }
+.balance-row .amount { font-family: var(--mono); }
+
+.tx-form .row { display: flex; gap: 12px; }
+.tx-form .row > * { flex: 1; }
+
+.list-empty { color: var(--muted); padding: 24px; text-align: center; }
+
+.nft-card {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px; margin-bottom: 12px;
+}
+.nft-card .image-wrap {
+  width: 100%; aspect-ratio: 1 / 1;
+  border-radius: 4px; overflow: hidden;
+  margin-bottom: 12px; position: relative;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.nft-card .image-wrap img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.nft-card .image-wrap.placeholder {
+  border: 1px dashed var(--border);
+}
+.nft-card .image-wrap.placeholder .glyph {
+  font-size: 36px; color: var(--muted); opacity: 0.4;
+}
+.nft-card .image-wrap.placeholder .label {
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  text-align: center; font-size: 10px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.nft-card .image-wrap .gradient {
+  position: absolute; inset: 0;
+}
+.nft-card .title { font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+.nft-card .desc { font-size: 12px; color: var(--text); margin-bottom: 8px; line-height: 1.5; }
+.nft-card .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.nft-card .meta .uri-link { color: var(--accent-2); text-decoration: none; }
+.nft-card .meta .uri-link:hover { text-decoration: underline; }
+.nft-card .traits { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.nft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 540px) {
+  .nft-grid { grid-template-columns: 1fr; }
+}
+
+.preview-block {
+  margin-top: 14px; padding: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.preview-block .preview-img {
+  width: 88px; height: 88px; flex-shrink: 0;
+  border-radius: 4px; overflow: hidden;
+  background: var(--panel-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.preview-block .preview-img img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.preview-block .preview-info {
+  flex: 1; min-width: 0;
+  font-size: 12px;
+}
+.preview-block .preview-info .name { color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+.preview-block .preview-info .desc { color: var(--text); margin-bottom: 6px; line-height: 1.5; }
+.preview-block .preview-info .meta { color: var(--muted); font-size: 11px; }
+.preview-block.loading { color: var(--muted); font-size: 12px; padding: 12px; }
+.preview-block.error { border-color: var(--error); color: var(--error); font-size: 12px; }
+.trait-chip {
+  padding: 2px 8px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 3px; font-size: 11px; font-family: var(--mono);
+}
+.trait-chip.legendary { color: var(--warn); border-color: var(--warn); }
+
+.lottery-card {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px; margin-bottom: 12px;
+}
+.lottery-card .header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.lottery-card .id { font-weight: 600; color: var(--accent-2); font-family: var(--mono); }
+.lottery-card .status { font-size: 11px; padding: 2px 8px; border-radius: 3px; }
+.lottery-card .status.open { background: var(--accent); color: var(--bg); }
+.lottery-card .status.drawn { background: var(--warn); color: var(--bg); }
+.lottery-card .status.ready { background: var(--accent-2); color: var(--bg); }
+.lottery-card .status.closed { background: var(--muted); color: var(--bg); }
+.act-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); color: var(--text); text-decoration: none; }
+.act-row:last-child { border-bottom: none; }
+.act-row:hover { background: var(--panel-2); }
+.act-dir { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 13px; }
+.act-dir.in { background: rgba(0, 212, 170, 0.15); color: var(--accent); }
+.act-dir.out { background: rgba(255, 107, 157, 0.15); color: var(--accent-2); }
+.act-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.act-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-sub, .lot-sub { font-size: 12px; color: var(--muted); }
+.act-amt { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.act-amt.in { color: var(--accent); }
+.act-amt.out { color: var(--accent-2); }
+.empty-note { color: var(--muted); font-size: 13px; padding: 8px 0; }
+.lot-row { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+.lot-row:last-child { border-bottom: none; }
+.lot-row.won { background: rgba(255, 180, 84, 0.07); border-radius: 6px; padding-left: 10px; padding-right: 10px; }
+.lot-main { flex: 1; min-width: 0; }
+.lot-id { font-weight: 600; margin-right: 8px; }
+.lot-row .status { font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 2px 7px; border-radius: 3px; margin-right: 6px; }
+.lot-row .status.open { background: var(--accent); color: var(--bg); }
+.lot-row .status.ready { background: var(--accent-2); color: var(--bg); }
+.lot-row .status.closed { background: var(--muted); color: var(--bg); }
+.lot-row .status.drawn { background: var(--warn); color: var(--bg); }
+.lot-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--border); color: var(--muted); margin-right: 4px; }
+.lot-badge.win { background: var(--warn); border-color: var(--warn); color: var(--bg); }
+.lot-row button.small, button.small { width: auto; margin: 0; padding: 6px 12px; font-size: 12px; white-space: nowrap; }
+.lottery-card .info { color: var(--muted); font-size: 12px; }
+
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 24px; max-width: 480px; width: 90%;
+}
+.modal h2 { margin-top: 0; }
+
+.toast {
+  position: fixed; top: 20px; right: 20px; z-index: 200;
+  background: var(--panel); border: 1px solid var(--accent);
+  padding: 12px 20px; border-radius: 6px; max-width: 400px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.toast.error { border-color: var(--error); }
+.toast .title { font-weight: 600; margin-bottom: 4px; }
+.toast .msg { font-size: 12px; color: var(--muted); word-break: break-all; }
+
+.warn-box {
+  background: rgba(255, 180, 84, 0.08); border: 1px solid var(--warn);
+  border-radius: 4px; padding: 12px 14px; margin-bottom: 16px;
+  font-size: 13px; color: var(--warn);
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script type="module">
+import * as secp from 'https://cdn.jsdelivr.net/npm/@noble/secp256k1@2.3.0/+esm';
+import { sha256 } from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/sha256/+esm';
+import { ripemd160 } from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/ripemd160/+esm';
+import { hmac } from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/hmac/+esm';
+import bs58 from 'https://cdn.jsdelivr.net/npm/bs58@6.0.0/+esm';
+
+// noble-secp256k1 v2.3 needs HMAC plumbed in for deterministic signing
+secp.etc.hmacSha256Sync = (key, ...messages) =>
+  hmac(sha256, key, secp.etc.concatBytes(...messages));
+
+// ======================================================================
+// CONFIG
+// ======================================================================
+
+const RPC_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://rpc.entropychain.io';
+
+const ADDR_VERSION = 0x21;
+const NATIVE_TOKEN = 'ENTRO';
+const DECIMALS = 8;
+const SCALE = 10n ** BigInt(DECIMALS);
+
+// ======================================================================
+// CRYPTO PRIMITIVES (must match Python's crypto_utils.py byte-for-byte)
+// ======================================================================
+
+function bytesToHex(b) {
+  return Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+function hexToBytes(h) {
+  const out = new Uint8Array(h.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i*2, i*2+2), 16);
+  return out;
+}
+function sha256d(data) {
+  return sha256(sha256(data));
+}
+
+// pubkey -> address (Base58Check)
+// Matches Python: ripemd160(sha256(pubkey)) + version + double-sha256 checksum
+function pubkeyToAddress(pubkey) {
+  const h = ripemd160(sha256(pubkey));
+  const versioned = new Uint8Array(1 + h.length);
+  versioned[0] = ADDR_VERSION;
+  versioned.set(h, 1);
+  const checksum = sha256d(versioned).slice(0, 4);
+  const full = new Uint8Array(versioned.length + 4);
+  full.set(versioned);
+  full.set(checksum, versioned.length);
+  return bs58.encode(full);
+}
+
+function addressIsValid(addr) {
+  try {
+    const decoded = bs58.decode(addr);
+    if (decoded.length !== 25) return false;
+    if (decoded[0] !== ADDR_VERSION) return false;
+    const payload = decoded.slice(0, 21);
+    const checksum = decoded.slice(21);
+    const expected = sha256d(payload).slice(0, 4);
+    for (let i = 0; i < 4; i++) if (checksum[i] !== expected[i]) return false;
+    return true;
+  } catch { return false; }
+}
+
+// Generate keypair: 32-byte private key, 33-byte compressed public key
+function generateKeypair() {
+  const priv = secp.utils.randomPrivateKey();
+  const pub = secp.getPublicKey(priv, true); // compressed
+  return { priv, pub };
+}
+
+// Sign with deterministic ECDSA (RFC 6979) over SHA-256(message).
+// Returns 64-byte compact format (r || s) - what Python's ecdsa library expects.
+function sign(privKey, message) {
+  const msgHash = sha256(message);
+  const sig = secp.sign(msgHash, privKey);
+  return sig.toCompactRawBytes();
+}
+
+// ======================================================================
+// PYTHON-COMPATIBLE JSON SERIALIZATION
+// Transaction hashes are SHA-256d of Python's json.dumps(d, sort_keys=True)
+// applied to the JSON the node *receives*. So the payload we sign must be
+// exactly what Python prints after json.loads(JSON.stringify(value)):
+//   - ", " and ": " separators, keys sorted by code point
+//   - ensure_ascii: every char outside printable ASCII becomes \uXXXX
+//   - a number literal without . or e is a Python int (printed as-is);
+//     anything else is a Python float, printed with Python's repr()
+// ======================================================================
+
+function pyFloatRepr(n) {
+  if (n === 0) return Object.is(n, -0) ? '-0.0' : '0.0';
+  const sci = n.toExponential();               // shortest round-trip digits
+  const [mant, expStr] = sci.split('e');
+  const exp = parseInt(expStr, 10);
+  if (exp < -4 || exp >= 16) {
+    const sign = exp < 0 ? '-' : '+';
+    return mant + 'e' + sign + String(Math.abs(exp)).padStart(2, '0');
+  }
+  const s = n.toString();                      // fixed notation in this range
+  return s.includes('.') ? s : s + '.0';
+}
+
+function pyString(s) {
+  return JSON.stringify(s).replace(/[\u007f-￿]/g,
+    c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+}
+
+function cmpCodePoints(a, b) {
+  const A = Array.from(a), B = Array.from(b);
+  for (let i = 0; i < Math.min(A.length, B.length); i++) {
+    const d = A[i].codePointAt(0) - B[i].codePointAt(0);
+    if (d) return d;
+  }
+  return A.length - B.length;
+}
+
+function pythonJsonDumps(v) {
+  if (v === null || v === undefined) return 'null';
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  if (typeof v === 'number') {
+    const lit = JSON.stringify(v);             // what goes over the wire
+    if (lit === 'null') return 'null';         // NaN / Infinity
+    return /[.eE]/.test(lit) ? pyFloatRepr(v) : lit;
+  }
+  if (typeof v === 'string') return pyString(v);
+  if (Array.isArray(v)) return '[' + v.map(pythonJsonDumps).join(', ') + ']';
+  if (typeof v === 'object') {
+    const keys = Object.keys(v)
+      .filter(k => v[k] !== undefined && typeof v[k] !== 'function')
+      .sort(cmpCodePoints);
+    return '{' + keys.map(k => pyString(k) + ': ' + pythonJsonDumps(v[k])).join(', ') + '}';
+  }
+  throw new Error('Cannot serialize: ' + typeof v);
+}
+
+function txSigningPayload(tx) {
+  return pythonJsonDumps({
+    tx_type: tx.tx_type,
+    sender: tx.sender,
+    timestamp: tx.timestamp,
+    nonce: tx.nonce,
+    data: tx.data,
+    fee: tx.fee,
+  });
+}
+
+// ======================================================================
+// TRANSACTION BUILDERS
+// ======================================================================
+
+// Python's time.time() is always a float. Date.now()/1000 is a whole number
+// once every 1000 ms; JSON.stringify would then send an int and the node
+// would hash "1790985600" instead of "1790985600.0". Keep it fractional.
+function nowTimestamp() {
+  const t = Date.now() / 1000;
+  return Number.isInteger(t) ? t + 0.001 : t;
+}
+
+function randomNonce() {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return bytesToHex(bytes);
+}
+
+function makeTx(tx_type, sender, data, fee = 1) {
+  return {
+    tx_type, sender, timestamp: nowTimestamp(), nonce: randomNonce(),
+    data, fee, public_key: null, signature: null,
+  };
+}
+
+const Tx = {
+  transfer: (sender, recipient, amount, token = NATIVE_TOKEN, fee = 10) =>
+    makeTx('transfer', sender, { recipient, amount, token }, fee),
+  tokenCreate: (sender, symbol, name, total_supply, decimals = 8, fee = 100) =>
+    makeTx('token_create', sender,
+      { symbol: symbol.toUpperCase(), name, total_supply, decimals }, fee),
+  tokenMint: (sender, symbol, recipient, amount, fee = 10) =>
+    makeTx('token_mint', sender,
+      { symbol: symbol.toUpperCase(), recipient, amount }, fee),
+  nftCreate: (sender, collection_id, name, description = '', fee = 100) =>
+    makeTx('nft_create', sender,
+      { collection_id, name, description }, fee),
+  nftMint: (sender, collection_id, token_id, recipient, metadata_uri = '', traits = {}, fee = 5) =>
+    makeTx('nft_mint', sender,
+      { collection_id, token_id, recipient, metadata_uri, traits }, fee),
+  // Traits come from the beacon of the block after this mint is included
+  // (beacon v2), so the minter does not choose an entropy block.
+  nftRandomMint: (sender, collection_id, token_id, recipient, metadata_uri = '', fee = 5) =>
+    makeTx('nft_random_mint', sender,
+      { collection_id, token_id, recipient, metadata_uri }, fee),
+  nftTransfer: (sender, collection_id, token_id, recipient, fee = 1) =>
+    makeTx('nft_transfer', sender,
+      { collection_id, token_id, recipient }, fee),
+  lotteryCreate: (sender, lottery_id, prize_amount, ticket_price, draw_height, token = NATIVE_TOKEN, fee = 50) =>
+    makeTx('lottery_create', sender,
+      { lottery_id, prize_amount, ticket_price, draw_height, token }, fee),
+  lotteryEnter: (sender, lottery_id, fee = 1) =>
+    makeTx('lottery_enter', sender, { lottery_id }, fee),
+  lotteryDraw: (sender, lottery_id, fee = 1) =>
+    makeTx('lottery_draw', sender, { lottery_id }, fee),
+};
+
+async function signTx(tx, privKey, pubKey) {
+  tx.public_key = bytesToHex(pubKey);
+  const payload = new TextEncoder().encode(txSigningPayload(tx));
+  const sig = sign(privKey, payload);
+  tx.signature = bytesToHex(sig);
+  return tx;
+}
+
+// ======================================================================
+// RPC CLIENT
+// ======================================================================
+
+async function rpc(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Accept': 'application/json' } };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(RPC_URL + path, opts);
+  return r.json();
+}
+
+const Api = {
+  info: () => rpc('/rpc/info'),
+  balance: (addr) => rpc(`/rpc/balance/${addr}`),
+  tokens: () => rpc('/rpc/tokens'),
+  token: (sym) => rpc(`/rpc/token/${sym}`),
+  nft: (col, tid) => rpc(`/rpc/nft/${col}/${tid}`),
+  nftsOwned: (addr) => rpc(`/rpc/nfts/${addr}`),
+  collections: (creator) => rpc(creator ? `/rpc/collections?creator=${creator}` : '/rpc/collections'),
+  lottery: (lid) => rpc(`/rpc/lottery/${encodeURIComponent(lid)}`),
+  lotteries: () => rpc('/rpc/lotteries?limit=50'),
+  history: (addr) => rpc(`/rpc/history/${addr}?limit=100`),
+  submit: (tx) => rpc('/rpc/submit_tx', 'POST', { tx }),
+};
+
+// ======================================================================
+// ENCRYPTED LOCAL STORAGE WALLET
+// PBKDF2 -> AES-GCM via WebCrypto, matches Python's wallet.py
+// ======================================================================
+
+const STORAGE_KEY = 'entropy_wallet_v1';
+const ACTIVE_ADDR_KEY = 'entropy_active_addr_v1';
+
+async function deriveKey(passphrase, salt) {
+  const baseKey = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(passphrase),
+    'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptWallet(plaintextObj, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(passphrase, salt);
+  const plaintext = new TextEncoder().encode(JSON.stringify(plaintextObj));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, plaintext);
+  return {
+    salt: bytesToHex(salt),
+    nonce: bytesToHex(nonce),
+    ciphertext: bytesToHex(new Uint8Array(ct)),
+  };
+}
+
+async function decryptWallet(envelope, passphrase) {
+  const salt = hexToBytes(envelope.salt);
+  const nonce = hexToBytes(envelope.nonce);
+  const ct = hexToBytes(envelope.ciphertext);
+  const key = await deriveKey(passphrase, salt);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce }, key, ct);
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+function loadStoredWallet() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  return JSON.parse(raw);
+}
+
+// Save the encrypted blob with the canonical list of addresses it contains.
+// `addresses` is the list of addresses present (in display order).
+function saveStoredWallet(envelope, addresses) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...envelope, addresses }));
+}
+
+// Active address persistence — stored in the clear since the address itself
+// is a public identifier. Keys are still encrypted in the main blob.
+function loadActiveAddress() {
+  return localStorage.getItem(ACTIVE_ADDR_KEY) || null;
+}
+function saveActiveAddress(addr) {
+  if (addr) localStorage.setItem(ACTIVE_ADDR_KEY, addr);
+  else localStorage.removeItem(ACTIVE_ADDR_KEY);
+}
+
+// Re-encrypt the in-memory keys with the same passphrase the user supplied
+// the last time they unlocked. We store the passphrase-derived KEY (not the
+// passphrase) for the duration of the session so we can persist additions
+// without prompting the user every time.
+async function persistKeys(passphrase) {
+  const envelope = await encryptWallet(state.keys, passphrase);
+  const addresses = Object.keys(state.keys);
+  saveStoredWallet(envelope, addresses);
+  state.encrypted = { ...envelope, addresses };
+}
+
+// ======================================================================
+// APP STATE
+// ======================================================================
+
+const state = {
+  // Wallet state
+  unlocked: false,
+  encrypted: null,        // {salt, nonce, ciphertext, addresses}
+  keys: {},               // addr -> {private_key, public_key, label}
+  currentAddress: null,
+  passphrase: null,       // kept in memory while unlocked, cleared on lock; needed to re-encrypt when adding/removing accounts
+  accountMenuOpen: false, // dropdown state
+
+  // Cached chain data
+  info: null,
+  balances: {},
+  tokensInfo: {},
+  ownedNfts: [],
+  ownedCollections: [],
+  knownLotteries: [],
+
+  // UI
+  activeTab: 'wallet',
+  toast: null,
+};
+
+// ======================================================================
+// FORMATTERS
+// ======================================================================
+
+function fmtAmount(units, decimals = DECIMALS) {
+  const u = BigInt(units);
+  const scale = 10n ** BigInt(decimals);
+  const whole = u / scale;
+  const frac = u % scale;
+  if (frac === 0n) return whole.toLocaleString();
+  let fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '');
+  return whole.toLocaleString() + '.' + fracStr;
+}
+
+function toUnits(human, decimals = DECIMALS) {
+  const [wholePart, fracPart = ''] = String(human).split('.');
+  const fracPadded = fracPart.padEnd(decimals, '0').slice(0, decimals);
+  return Number(BigInt(wholePart) * (10n ** BigInt(decimals)) + BigInt(fracPadded || '0'));
+}
+
+function shortAddr(a, n = 8) {
+  if (!a) return '?';
+  return a.length <= n * 2 ? a : `${a.slice(0, n)}…${a.slice(-n)}`;
+}
+
+// ======================================================================
+// METADATA FETCHING
+// ======================================================================
+
+// Cache fetched metadata so we don't refetch the same URL repeatedly.
+const metadataCache = new Map();
+
+// Convert ipfs:// URLs to a public gateway. Pinata's gateway is the most reliable.
+function resolveUri(uri) {
+  if (!uri) return null;
+  const u = uri.trim();
+  if (u.startsWith('ipfs://')) {
+    const cid = u.slice('ipfs://'.length).replace(/^ipfs\//, '');
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  }
+  return u;
+}
+
+async function fetchMetadata(uri) {
+  if (!uri) return null;
+  if (metadataCache.has(uri)) return metadataCache.get(uri);
+  const resolved = resolveUri(uri);
+  if (!resolved) return null;
+  const promise = (async () => {
+    try {
+      const r = await fetch(resolved, { redirect: 'follow' });
+      if (!r.ok) return { error: `HTTP ${r.status}` };
+      const ct = r.headers.get('content-type') || '';
+      // If the URI points directly at an image, treat it as image-only metadata
+      if (ct.startsWith('image/')) {
+        return { image: resolved, _isImageOnly: true };
+      }
+      const data = await r.json();
+      // Resolve relative or ipfs:// images to a usable URL
+      if (data.image) data.image = resolveUri(data.image) || data.image;
+      return data;
+    } catch (e) {
+      return { error: e.message || 'fetch failed' };
+    }
+  })();
+  metadataCache.set(uri, promise);
+  return promise;
+}
+
+// Generate a deterministic linear-gradient from any string (e.g., entropy seed).
+// Used as a fallback "image" when an NFT has no metadata URI.
+function gradientFromSeed(seedHex) {
+  if (!seedHex || seedHex.length < 12) {
+    return 'linear-gradient(135deg, #1f2a3a 0%, #131b27 100%)';
+  }
+  const h1 = parseInt(seedHex.slice(0, 6), 16) % 360;
+  const h2 = parseInt(seedHex.slice(6, 12), 16) % 360;
+  return `linear-gradient(135deg, hsl(${h1}, 50%, 22%) 0%, hsl(${h2}, 50%, 14%) 100%)`;
+}
+
+// Escape a string for safe HTML embedding (since we use innerHTML in places).
+function esc(s) {
+  if (s === undefined || s === null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ======================================================================
+// UI RENDERING
+// ======================================================================
+
+const $app = document.getElementById('app');
+
+function showToast(title, msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  t.innerHTML = `<div class="title">${title}</div><div class="msg">${msg}</div>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+}
+
+async function refreshChainData(silent = false) {
+  try {
+    state.info = await Api.info();
+    if (state.currentAddress) {
+      state.balances[state.currentAddress] = await Api.balance(state.currentAddress);
+      // Fetch owned NFTs and collections in parallel
+      const [nftRes, colRes] = await Promise.all([
+        Api.nftsOwned(state.currentAddress).catch(() => ({nfts: []})),
+        Api.collections(state.currentAddress).catch(() => ({collections: []})),
+      ]);
+      state.ownedNfts = nftRes.nfts || [];
+      state.ownedCollections = colRes.collections || [];
+      const [histRes, lotRes] = await Promise.all([
+        Api.history(state.currentAddress).catch(() => ({history: []})),
+        Api.lotteries().catch(() => ({lotteries: []})),
+      ]);
+      state.history = histRes.history || [];
+      state.lotteries = lotRes.lotteries || [];
+    }
+    state.tokensInfo = await Api.tokens();
+    if (!silent) render();
+    else { updateHeaderOnly(); updateLiveLists(); }
+  } catch (e) {
+    console.error('refreshChainData failed', e);
+  }
+}
+
+// Repaint the activity and lottery lists in place (they hold no inputs, so
+// this never disturbs a half-filled form).
+function updateLiveLists() {
+  const act = document.getElementById('activity-list');
+  if (act) act.innerHTML = activityHtml();
+  const lots = document.getElementById('lot-list');
+  if (lots) lots.innerHTML = lotteryListHtml();
+}
+
+// One line per transaction involving the current account.
+function describeTx(tx, me) {
+  const d = tx.data || {};
+  const out = tx.sender === me;
+  const tok = d.token || NATIVE_TOKEN;
+  const dec = (t) => (t === NATIVE_TOKEN ? DECIMALS : (state.tokensInfo[t]?.decimals ?? DECIMALS));
+  const amt = (v, t) => `${fmtAmount(v || 0, dec(t))} ${t}`;
+  switch (tx.tx_type) {
+    case 'coinbase': return { text: 'Mining reward', amount: '+' + amt(d.amount, NATIVE_TOKEN), out: false };
+    case 'transfer': return out
+      ? { text: `Sent to ${shortAddr(d.recipient)}`, amount: '−' + amt(d.amount, tok), out: true }
+      : { text: `Received from ${shortAddr(tx.sender)}`, amount: '+' + amt(d.amount, tok), out: false };
+    case 'token_create': return { text: `Created token ${d.symbol}`, amount: '', out: true };
+    case 'token_mint': return out
+      ? { text: `Minted ${d.symbol} to ${shortAddr(d.recipient)}`, amount: '', out: true }
+      : { text: `Received ${d.symbol} (minted)`, amount: '+' + amt(d.amount, String(d.symbol || '').toUpperCase()), out: false };
+    case 'nft_create': return { text: `Created collection ${d.collection_id}`, amount: '', out: true };
+    case 'nft_mint': case 'nft_random_mint': return out && d.recipient !== me
+      ? { text: `Minted NFT ${d.collection_id} #${d.token_id} to ${shortAddr(d.recipient)}`, amount: '', out: true }
+      : { text: `NFT ${d.collection_id} #${d.token_id} minted to you`, amount: '', out: false };
+    case 'nft_transfer': return out
+      ? { text: `Sent NFT ${d.collection_id} #${d.token_id}`, amount: '', out: true }
+      : { text: `Received NFT ${d.collection_id} #${d.token_id}`, amount: '', out: false };
+    case 'lottery_create': return { text: `Created lottery ${d.lottery_id}`, amount: d.prize_amount ? '−' + amt(d.prize_amount, d.token || NATIVE_TOKEN) : '', out: true };
+    case 'lottery_enter': {
+      const lot = (state.lotteries || []).find((l) => l.lottery_id === d.lottery_id);
+      return { text: `Entered lottery ${d.lottery_id}`, amount: lot ? '−' + amt(lot.ticket_price, NATIVE_TOKEN) : '', out: true };
+    }
+    case 'lottery_draw': {
+      const lot = (state.lotteries || []).find((l) => l.lottery_id === d.lottery_id);
+      if (lot && lot.winner === me) {
+        const t = lot.token || NATIVE_TOKEN;
+        return { text: `Won lottery ${d.lottery_id}!`, amount: '+' + amt(BigInt(lot.prize_amount || 0) + BigInt(lot.entry_pool || 0), t), out: false };
+      }
+      return { text: `Lottery ${d.lottery_id} drawn`, amount: '', out };
+    }
+  }
+  return { text: tx.tx_type, amount: '', out };
+}
+
+// A miner's history is mostly block rewards, so runs of consecutive rewards
+// collapse into one row and transfers, NFTs and lotteries stay visible.
+function groupRewards(history) {
+  const out = [];
+  for (const tx of history) {
+    const prev = out[out.length - 1];
+    if (tx.tx_type === 'coinbase' && prev && prev.rewards) {
+      prev.rewards.push(tx);
+    } else {
+      out.push(tx.tx_type === 'coinbase' ? { rewards: [tx] } : tx);
+    }
+  }
+  return out;
+}
+
+function rewardsRowHtml(txs) {
+  if (txs.length === 1) return null;
+  const sum = txs.reduce((s, tx) => s + BigInt(tx.data?.amount || 0), 0n);
+  const hi = txs[0].height, lo = txs[txs.length - 1].height;
+  return `<a class="act-row" href="https://explorer.entropychain.io/block/${Number(hi)}" target="_blank" rel="noopener">
+      <span class="act-dir in">↓</span>
+      <span class="act-main"><span class="act-text">Mining rewards × ${txs.length}</span>
+        <span class="act-sub">Blocks #${Number(lo).toLocaleString()}–#${Number(hi).toLocaleString()}</span></span>
+      <span class="act-amt in">+${esc(fmtAmount(sum))} ${NATIVE_TOKEN}</span></a>`;
+}
+
+function activityHtml() {
+  const me = state.currentAddress;
+  const rows = groupRewards(state.history || []).map((item) => {
+    if (item.rewards) { const g = rewardsRowHtml(item.rewards); if (g) return g; item = item.rewards[0]; }
+    const tx = item;
+    const t = describeTx(tx, me);
+    const fee = t.out && tx.tx_type !== 'coinbase' && Number(tx.fee) > 0 ? ` · fee ${esc(tx.fee)}` : '';
+    const link = tx.tx_hash ? `https://explorer.entropychain.io/tx/${tx.tx_hash}` : `https://explorer.entropychain.io/block/${tx.height}`;
+    return `<a class="act-row" href="${link}" target="_blank" rel="noopener">
+      <span class="act-dir ${t.out ? 'out' : 'in'}">${t.out ? '↑' : '↓'}</span>
+      <span class="act-main"><span class="act-text">${esc(t.text)}</span>
+        <span class="act-sub">Block #${Number(tx.height).toLocaleString()}${fee}</span></span>
+      <span class="act-amt ${t.amount.startsWith('+') ? 'in' : 'out'}">${esc(t.amount)}</span></a>`;
+  });
+  return rows.length ? rows.join('') : '<div class="empty-note">No activity yet. Mine, use the faucet, or receive a transfer to see it here.</div>';
+}
+
+function lotteryState(l, h) {
+  const k = l.draw_blocks || 1;
+  if (l.drawn) return { key: 'drawn', label: `Drawn at #${Number(l.drawn_at_height || l.draw_height).toLocaleString()}` };
+  if (h + 1 < l.draw_height) { const n = l.draw_height - 1 - h; return { key: 'open', label: `Open · draws in ${n.toLocaleString()} block${n === 1 ? '' : 's'}` }; }
+  if (h >= l.draw_height + k - 1) return { key: 'ready', label: 'Ready to draw' };
+  const n = l.draw_height + k - 1 - h;
+  return { key: 'closed', label: `Entries closed · result in ${n} block${n === 1 ? '' : 's'}` };
+}
+
+function lotteryListHtml() {
+  const me = state.currentAddress;
+  const h = state.info ? state.info.height : 0;
+  const lots = state.lotteries || [];
+  if (!lots.length) return '<div class="empty-note">No lotteries yet. Create the first one below.</div>';
+  const order = { open: 0, ready: 1, closed: 2, drawn: 3 };
+  const rows = lots.map((l) => ({ l, st: lotteryState(l, h) }))
+    .sort((a, b) => order[a.st.key] - order[b.st.key]);
+  return rows.map(({ l, st }) => {
+    const entered = (l.entrants || []).includes(me);
+    const won = l.drawn && l.winner === me;
+    const badges = (won ? '<span class="lot-badge win">You won!</span>' : entered ? '<span class="lot-badge">You\'re in</span>' : '')
+      + (l.organizer === me ? '<span class="lot-badge">Your lottery</span>' : '');
+    let action = '';
+    if (st.key === 'open' && !entered) action = `<button class="small" data-lot-enter="${esc(l.lottery_id)}">Enter · ${fmtAmount(l.ticket_price)} ENTRO</button>`;
+    else if (st.key === 'ready') action = `<button class="small secondary" data-lot-draw="${esc(l.lottery_id)}">Draw now</button>`;
+    const tok = l.token || NATIVE_TOKEN;
+    const prizeDec = tok === NATIVE_TOKEN ? DECIMALS : (state.tokensInfo[tok]?.decimals ?? DECIMALS);
+    const winner = l.drawn && !won && l.winner ? ` · winner ${esc(shortAddr(l.winner))}` : '';
+    return `<div class="lot-row ${won ? 'won' : ''}">
+      <div class="lot-main"><div><span class="lot-id">${esc(l.lottery_id)}</span>
+        <span class="status ${st.key}">${st.key.toUpperCase()}</span>${badges}</div>
+        <div class="lot-sub">${esc(st.label)} · prize ${fmtAmount(l.prize_amount, prizeDec)} ${esc(tok)} + pool ${fmtAmount(l.entry_pool || 0)} ENTRO · ${(l.entrants || []).length} entrant${(l.entrants || []).length === 1 ? '' : 's'}${(l.draw_blocks || 1) > 1 ? ` · ${l.draw_blocks}-block draw` : ''}${winner}</div></div>
+      ${action}</div>`;
+  }).join('');
+}
+
+// Lightweight update that only repaints the header network status,
+// leaving form inputs and tab content untouched.
+function updateHeaderOnly() {
+  const existingHeader = document.querySelector('header');
+  if (!existingHeader) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderHeader();
+  existingHeader.replaceWith(tmp.firstElementChild);
+}
+
+function render() {
+  if (!state.unlocked) {
+    renderOnboard();
+    return;
+  }
+  renderWallet();
+}
+
+// ---------------- Onboarding screens ----------------
+
+function renderOnboard() {
+  const stored = loadStoredWallet();
+  if (stored) {
+    renderUnlock(stored);
+  } else {
+    renderInitial();
+  }
+}
+
+function renderInitial() {
+  $app.innerHTML = `
+    ${renderHeader()}
+    <div class="onboard">
+      <h1>Welcome to EntropyChain</h1>
+      <p class="lede">A non-custodial wallet for testnet-4. Your keys stay in your browser, encrypted with a passphrase you set.</p>
+      <a class="choice" id="btn-create"><strong>Create new wallet →</strong><span>Generate fresh keys, set a passphrase</span></a>
+      <a class="choice" id="btn-import"><strong>Import from private key →</strong><span>Recover an existing wallet</span></a>
+      <div class="warn-box" style="margin-top:24px">
+        <strong>This is testnet-4.</strong> Tokens here have no real-world value. The chain may be reset without notice.
+      </div>
+    </div>
+  `;
+  document.getElementById('btn-create').onclick = renderCreate;
+  document.getElementById('btn-import').onclick = renderImport;
+}
+
+function renderCreate() {
+  $app.innerHTML = `
+    ${renderHeader()}
+    <div class="onboard">
+      <h1>Create wallet</h1>
+      <p class="lede">Choose a strong passphrase. There is no recovery if you forget it.</p>
+      <label>Passphrase</label>
+      <input type="password" id="pp1" autofocus>
+      <label>Confirm passphrase</label>
+      <input type="password" id="pp2">
+      <label>Address label (optional)</label>
+      <input type="text" id="label" placeholder="my wallet">
+      <button id="btn-go">Generate wallet</button>
+      <button class="secondary" id="btn-back">Back</button>
+      <div class="error-msg" id="err"></div>
+    </div>
+  `;
+  document.getElementById('btn-back').onclick = renderInitial;
+  document.getElementById('btn-go').onclick = async () => {
+    const pp1 = document.getElementById('pp1').value;
+    const pp2 = document.getElementById('pp2').value;
+    const label = document.getElementById('label').value || 'main';
+    const err = document.getElementById('err');
+    if (pp1.length < 6) { err.textContent = 'Passphrase must be at least 6 characters'; return; }
+    if (pp1 !== pp2) { err.textContent = 'Passphrases do not match'; return; }
+
+    const { priv, pub } = generateKeypair();
+    const addr = pubkeyToAddress(pub);
+    state.keys = { [addr]: {
+      private_key: bytesToHex(priv),
+      public_key: bytesToHex(pub),
+      label,
+    } };
+    state.currentAddress = addr;
+    state.passphrase = pp1;
+    const envelope = await encryptWallet(state.keys, pp1);
+    saveStoredWallet(envelope, [addr]);
+    saveActiveAddress(addr);
+    state.encrypted = { ...envelope, addresses: [addr] };
+    state.unlocked = true;
+
+    showToast('Wallet created', `Your address: ${shortAddr(addr)}`, 'success');
+    await refreshChainData();
+  };
+}
+
+function renderImport() {
+  $app.innerHTML = `
+    ${renderHeader()}
+    <div class="onboard">
+      <h1>Import wallet</h1>
+      <p class="lede">Paste the 64-character private key (hex) of the address you want to import.</p>
+      <label>Private key (hex)</label>
+      <input type="password" id="priv" autofocus>
+      <label>Passphrase to encrypt this wallet</label>
+      <input type="password" id="pp1">
+      <label>Confirm passphrase</label>
+      <input type="password" id="pp2">
+      <label>Label (optional)</label>
+      <input type="text" id="label" placeholder="imported">
+      <button id="btn-go">Import</button>
+      <button class="secondary" id="btn-back">Back</button>
+      <div class="error-msg" id="err"></div>
+    </div>
+  `;
+  document.getElementById('btn-back').onclick = renderInitial;
+  document.getElementById('btn-go').onclick = async () => {
+    const privHex = document.getElementById('priv').value.trim();
+    const pp1 = document.getElementById('pp1').value;
+    const pp2 = document.getElementById('pp2').value;
+    const label = document.getElementById('label').value || 'imported';
+    const err = document.getElementById('err');
+    if (!/^[0-9a-fA-F]{64}$/.test(privHex)) { err.textContent = 'Private key must be 64 hex characters'; return; }
+    if (pp1.length < 6) { err.textContent = 'Passphrase must be at least 6 characters'; return; }
+    if (pp1 !== pp2) { err.textContent = 'Passphrases do not match'; return; }
+
+    try {
+      const priv = hexToBytes(privHex);
+      const pub = secp.getPublicKey(priv, true);
+      const addr = pubkeyToAddress(pub);
+      state.keys = { [addr]: {
+        private_key: privHex.toLowerCase(),
+        public_key: bytesToHex(pub),
+        label,
+      } };
+      state.currentAddress = addr;
+      state.passphrase = pp1;
+      const envelope = await encryptWallet(state.keys, pp1);
+      saveStoredWallet(envelope, [addr]);
+      saveActiveAddress(addr);
+      state.encrypted = { ...envelope, addresses: [addr] };
+      state.unlocked = true;
+      showToast('Wallet imported', shortAddr(addr));
+      await refreshChainData();
+    } catch (e) {
+      err.textContent = 'Failed: ' + e.message;
+    }
+  };
+}
+
+function renderUnlock(stored) {
+  const addrCount = stored.addresses ? stored.addresses.length : 1;
+  const primaryAddr = stored.addresses ? stored.addresses[0] : '';
+  const addrLine = addrCount === 1
+    ? `Address: <span style="color:var(--accent-2);font-family:var(--mono);font-size:13px">${esc(primaryAddr)}</span>`
+    : `<span style="color:var(--accent-2);font-family:var(--mono);font-size:13px">${addrCount} accounts</span> stored on this device`;
+  $app.innerHTML = `
+    ${renderHeader()}
+    <div class="onboard">
+      <h1>Unlock wallet</h1>
+      <p class="lede">${addrLine}</p>
+      <label>Passphrase</label>
+      <input type="password" id="pp" autofocus>
+      <button id="btn-go">Unlock</button>
+      <div style="margin-top:24px; font-size:12px;">
+        <a href="#" id="btn-reset" style="color:var(--muted)">Forget this wallet and start over</a>
+      </div>
+      <div class="error-msg" id="err"></div>
+    </div>
+  `;
+  const tryUnlock = async () => {
+    const pp = document.getElementById('pp').value;
+    const err = document.getElementById('err');
+    try {
+      const keys = await decryptWallet(stored, pp);
+      state.keys = keys;
+      // Restore previously-active address if it still exists; otherwise use first.
+      const stickyAddr = loadActiveAddress();
+      const addrs = Object.keys(keys);
+      state.currentAddress = (stickyAddr && keys[stickyAddr]) ? stickyAddr : addrs[0];
+      saveActiveAddress(state.currentAddress);
+      state.encrypted = stored;
+      state.passphrase = pp;
+      state.unlocked = true;
+      showToast('Unlocked', shortAddr(state.currentAddress));
+      await refreshChainData();
+    } catch (e) {
+      err.textContent = 'Wrong passphrase';
+    }
+  };
+  document.getElementById('btn-go').onclick = tryUnlock;
+  document.getElementById('pp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryUnlock();
+  });
+  document.getElementById('btn-reset').onclick = (e) => {
+    e.preventDefault();
+    if (confirm('This will permanently delete this wallet from your browser. You will need your private key to recover it. Continue?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      renderInitial();
+    }
+  };
+}
+
+// ---------------- Header ----------------
+
+function renderHeader() {
+  let netStatus = '';
+  if (state.info) {
+    netStatus = `<span class="ok">●</span> connected · height ${state.info.height} · ${state.info.peer_count} peers`;
+  } else {
+    netStatus = `<span class="err">●</span> disconnected`;
+  }
+  return `
+    <header>
+      <div class="logo">⟁ ENTROPY<span>WALLET</span></div>
+      <span class="tag">TESTNET-4</span>
+      <div class="spacer"></div>
+      <div class="network-status">${netStatus}</div>
+    </header>
+  `;
+}
+
+// ---------------- Main wallet ----------------
+
+// ======================================================================
+// MODALS
+// ======================================================================
+
+function closeModal() {
+  const bg = document.getElementById('modal-bg');
+  if (bg) bg.remove();
+}
+
+function showModal(contentHtml, opts = {}) {
+  closeModal();  // Just one modal at a time
+  const bg = document.createElement('div');
+  bg.id = 'modal-bg';
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal" id="modal-inner">${contentHtml}</div>`;
+  document.body.appendChild(bg);
+  // Click outside closes
+  if (!opts.persistent) {
+    bg.addEventListener('click', (e) => {
+      if (e.target.id === 'modal-bg') closeModal();
+    });
+  }
+  // Escape closes
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+  return bg;
+}
+
+// ---------------- Manage modal: backup + export key ----------------
+
+function openManageModal() {
+  const currentLabel = state.keys[state.currentAddress]?.label || 'main';
+  showModal(`
+    <h2>Manage wallet</h2>
+    <p class="lede">
+      You're managing the <strong style="color:var(--accent)">${esc(currentLabel)}</strong> account
+      (<span style="color:var(--accent-2);font-family:var(--mono)">${esc(shortAddr(state.currentAddress))}</span>).
+    </p>
+
+    <div style="margin-top:18px">
+      <h3 style="font-size:14px;color:var(--text);margin-bottom:8px;font-family:-apple-system,sans-serif">Export private key</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+        Reveals the raw private key for this single account. Useful for importing
+        into another wallet (CLI, this wallet on another device).
+      </p>
+      <button id="btn-export-key" class="secondary" style="width:100%;margin-top:0">
+        Export private key →
+      </button>
+    </div>
+
+    <div style="margin-top:24px">
+      <h3 style="font-size:14px;color:var(--text);margin-bottom:8px;font-family:-apple-system,sans-serif">Download wallet backup</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+        Downloads the encrypted wallet file (all ${Object.keys(state.keys).length} account${Object.keys(state.keys).length === 1 ? '' : 's'}).
+        Open it on another device with the same passphrase.
+      </p>
+      <button id="btn-download-backup" class="secondary" style="width:100%;margin-top:0">
+        Download backup file ↓
+      </button>
+    </div>
+
+    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+      <button id="btn-modal-close" class="secondary" style="width:100%;margin-top:0">Close</button>
+    </div>
+  `);
+  document.getElementById('btn-export-key').onclick = () => openExportKeyModal();
+  document.getElementById('btn-download-backup').onclick = downloadBackup;
+  document.getElementById('btn-modal-close').onclick = closeModal;
+}
+
+function downloadBackup() {
+  if (!state.encrypted) {
+    showToast('Nothing to back up', 'Wallet not loaded', 'error');
+    return;
+  }
+  const payload = {
+    ...state.encrypted,
+    backup_format: 'entropy_wallet_v1',
+    exported_at: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `entropy-wallet-backup-${ts}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Backup downloaded', 'Store it somewhere safe and offline');
+  closeModal();
+}
+
+function openExportKeyModal() {
+  showModal(`
+    <h2>Export private key</h2>
+    <div class="warn-modal">
+      <strong>Anyone with this key can drain this account.</strong>
+      Never paste it in a chat, email, screenshot, or anywhere it could be seen.
+      Anyone asking you to share it is trying to steal from you.
+    </div>
+    <p class="lede">Re-enter your wallet passphrase to continue.</p>
+    <label style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Passphrase</label>
+    <input type="password" id="export-pp" autofocus style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-family:var(--mono)">
+    <div class="modal-actions">
+      <button id="btn-export-cancel" class="secondary">Cancel</button>
+      <button id="btn-export-confirm">Reveal key</button>
+    </div>
+    <div class="error-msg" id="export-err"></div>
+  `);
+  const tryReveal = async () => {
+    const pp = document.getElementById('export-pp').value;
+    const err = document.getElementById('export-err');
+    err.textContent = '';
+    if (!pp) { err.textContent = 'Passphrase required'; return; }
+    if (pp !== state.passphrase) {
+      err.textContent = 'Incorrect passphrase';
+      return;
+    }
+    showRevealedKey();
+  };
+  document.getElementById('btn-export-cancel').onclick = closeModal;
+  document.getElementById('btn-export-confirm').onclick = tryReveal;
+  document.getElementById('export-pp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryReveal();
+  });
+}
+
+function showRevealedKey() {
+  const k = state.keys[state.currentAddress];
+  if (!k) { closeModal(); return; }
+  const privHex = k.private_key;
+  const label = k.label || 'main';
+  showModal(`
+    <h2>Private key for ${esc(label)}</h2>
+    <div class="warn-modal">
+      Copy this once and store it securely. Treat it like a password.
+      The key will hide automatically when you switch tabs.
+    </div>
+    <p class="lede">Address: <span style="color:var(--accent-2);font-family:var(--mono);font-size:12px">${esc(state.currentAddress)}</span></p>
+    <div class="key-display hidden" id="key-display" data-key="${esc(privHex)}">${esc(privHex)}</div>
+    <div class="modal-actions">
+      <button id="btn-key-copy">Copy to clipboard</button>
+      <button id="btn-key-close" class="secondary">Done</button>
+    </div>
+    <p style="color:var(--muted);font-size:11px;margin-top:12px">
+      Tip: import this key into another EntropyChain wallet using the "Import" flow.
+    </p>
+  `, { persistent: true });
+
+  const display = document.getElementById('key-display');
+  let revealed = false;
+  display.onclick = () => {
+    if (!revealed) {
+      display.classList.remove('hidden');
+      revealed = true;
+    }
+  };
+  document.getElementById('btn-key-copy').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(privHex);
+      showToast('Copied', 'Key copied to clipboard. Paste it somewhere safe, then clear your clipboard.');
+    } catch (e) {
+      showToast('Copy failed', 'Select the key text manually', 'error');
+    }
+  };
+  document.getElementById('btn-key-close').onclick = closeModal;
+
+  // Auto-hide on tab/window blur for safety
+  const blurHandler = () => {
+    if (display && revealed) {
+      display.classList.add('hidden');
+      revealed = false;
+    }
+  };
+  window.addEventListener('blur', blurHandler);
+  // Cleanup when modal closes
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById('key-display')) {
+      window.removeEventListener('blur', blurHandler);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// ---------------- Add account modal ----------------
+
+function openAddAccountModal() {
+  showModal(`
+    <h2>Add account</h2>
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-mode="generate">Generate new</div>
+      <div class="modal-tab" data-mode="import">Import existing</div>
+    </div>
+
+    <div id="add-pane-generate">
+      <p class="lede">Generate a fresh keypair. The new account will be encrypted with your existing wallet passphrase.</p>
+      <label style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Account label</label>
+      <input id="gen-label" placeholder="e.g. trading, nfts, savings" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-family:var(--mono)">
+    </div>
+
+    <div id="add-pane-import" style="display:none">
+      <p class="lede">Import an existing private key into this wallet. It will be encrypted with your existing passphrase.</p>
+      <label style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Private key (64 hex characters)</label>
+      <input id="imp-key" type="password" placeholder="64-character hex private key" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);margin-bottom:10px">
+      <label style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block">Account label</label>
+      <input id="imp-label" placeholder="e.g. imported, mining" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-family:var(--mono)">
+    </div>
+
+    <div class="modal-actions">
+      <button id="btn-add-cancel" class="secondary">Cancel</button>
+      <button id="btn-add-confirm">Add account</button>
+    </div>
+    <div class="error-msg" id="add-err"></div>
+  `);
+
+  let mode = 'generate';
+  document.querySelectorAll('.modal-tab').forEach(t => {
+    t.onclick = () => {
+      mode = t.dataset.mode;
+      document.querySelectorAll('.modal-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('add-pane-generate').style.display = mode === 'generate' ? '' : 'none';
+      document.getElementById('add-pane-import').style.display = mode === 'import' ? '' : 'none';
+      document.getElementById('add-err').textContent = '';
+    };
+  });
+
+  document.getElementById('btn-add-cancel').onclick = closeModal;
+
+  document.getElementById('btn-add-confirm').onclick = async () => {
+    const err = document.getElementById('add-err');
+    err.textContent = '';
+    try {
+      let priv, pub, label;
+      if (mode === 'generate') {
+        label = document.getElementById('gen-label').value.trim() || `account-${Object.keys(state.keys).length + 1}`;
+        const kp = generateKeypair();
+        priv = kp.priv; pub = kp.pub;
+      } else {
+        const privHex = document.getElementById('imp-key').value.trim();
+        label = document.getElementById('imp-label').value.trim() || 'imported';
+        if (!/^[0-9a-fA-F]{64}$/.test(privHex)) {
+          err.textContent = 'Private key must be exactly 64 hex characters';
+          return;
+        }
+        priv = hexToBytes(privHex);
+        pub = secp.getPublicKey(priv, true);
+      }
+      const addr = pubkeyToAddress(pub);
+      if (state.keys[addr]) {
+        err.textContent = 'This account is already in your wallet';
+        return;
+      }
+      state.keys[addr] = {
+        private_key: bytesToHex(priv),
+        public_key: bytesToHex(pub),
+        label,
+      };
+      await persistKeys(state.passphrase);
+      // Switch to the new account
+      state.currentAddress = addr;
+      saveActiveAddress(addr);
+      closeModal();
+      showToast('Account added', `${esc(label)} · ${shortAddr(addr)}`);
+      render();
+      await refreshChainData();
+    } catch (e) {
+      err.textContent = e.message || 'Failed to add account';
+    }
+  };
+}
+
+
+function renderWallet() {
+  const accounts = Object.entries(state.keys);
+  const currentLabel = state.keys[state.currentAddress]?.label || 'main';
+  $app.innerHTML = `
+    ${renderHeader()}
+    <div class="container">
+      <div class="address-bar" id="addrbar">
+        <div class="account-switcher">
+          <div class="account-pill" id="acct-pill">
+            <span>${esc(currentLabel)}</span>
+            <span class="caret">▾</span>
+          </div>
+          ${state.accountMenuOpen ? renderAccountMenu(accounts) : ''}
+        </div>
+        <span class="addr-text">${esc(state.currentAddress)}</span>
+        <button id="btn-copy" title="Copy address">copy</button>
+        <button id="btn-manage" title="Export key, backup, manage">manage</button>
+        <button id="btn-lock" title="Lock wallet">lock</button>
+      </div>
+      <div class="tabs">
+        <div class="tab ${state.activeTab === 'wallet' ? 'active' : ''}" data-tab="wallet">Wallet</div>
+        <div class="tab ${state.activeTab === 'tokens' ? 'active' : ''}" data-tab="tokens">Tokens</div>
+        <div class="tab ${state.activeTab === 'nfts' ? 'active' : ''}" data-tab="nfts">NFTs</div>
+        <div class="tab ${state.activeTab === 'lotteries' ? 'active' : ''}" data-tab="lotteries">Lotteries</div>
+      </div>
+      <div id="tab-body"></div>
+    </div>
+  `;
+  document.getElementById('btn-copy').onclick = () => {
+    navigator.clipboard.writeText(state.currentAddress);
+    showToast('Copied', 'Address copied to clipboard');
+  };
+  document.getElementById('btn-manage').onclick = openManageModal;
+  document.getElementById('btn-lock').onclick = () => {
+    state.unlocked = false;
+    state.keys = {};
+    state.passphrase = null;
+    state.accountMenuOpen = false;
+    render();
+  };
+  document.getElementById('acct-pill').onclick = (e) => {
+    e.stopPropagation();
+    state.accountMenuOpen = !state.accountMenuOpen;
+    render();
+  };
+  // Click anywhere else closes the menu
+  if (state.accountMenuOpen) {
+    setTimeout(() => {
+      const closer = (ev) => {
+        if (!ev.target.closest('.account-switcher')) {
+          state.accountMenuOpen = false;
+          document.removeEventListener('click', closer);
+          render();
+        }
+      };
+      document.addEventListener('click', closer);
+    }, 0);
+    wireAccountMenu();
+  }
+  document.querySelectorAll('.tab').forEach(el => {
+    el.onclick = () => { state.activeTab = el.dataset.tab; render(); };
+  });
+  renderTab();
+}
+
+function renderAccountMenu(accounts) {
+  const items = accounts.map(([addr, info]) => `
+    <div class="item ${addr === state.currentAddress ? 'active' : ''}" data-addr="${esc(addr)}">
+      <span class="marker"></span>
+      <div class="label-col">
+        <div class="label-row">${esc(info.label || 'unnamed')}</div>
+        <div class="addr-row">${esc(shortAddr(addr, 10))}</div>
+      </div>
+    </div>
+  `).join('');
+  return `
+    <div class="account-menu" id="acct-menu">
+      ${items}
+      <div class="add-action" id="acct-add">+ Add account</div>
+    </div>
+  `;
+}
+
+function wireAccountMenu() {
+  document.querySelectorAll('#acct-menu .item').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const addr = el.dataset.addr;
+      if (addr && addr !== state.currentAddress) {
+        switchAccount(addr);
+      } else {
+        state.accountMenuOpen = false;
+        render();
+      }
+    };
+  });
+  const addBtn = document.getElementById('acct-add');
+  if (addBtn) addBtn.onclick = (e) => {
+    e.stopPropagation();
+    state.accountMenuOpen = false;
+    openAddAccountModal();
+  };
+}
+
+async function switchAccount(addr) {
+  state.currentAddress = addr;
+  state.accountMenuOpen = false;
+  saveActiveAddress(addr);
+  // Clear cached per-account data so it doesn't flash stale
+  state.balances[addr] = state.balances[addr] || {};
+  state.ownedNfts = [];
+  state.ownedCollections = [];
+  render();
+  await refreshChainData();
+}
+
+function renderTab() {
+  const body = document.getElementById('tab-body');
+  if (state.activeTab === 'wallet') return renderWalletTab(body);
+  if (state.activeTab === 'tokens') return renderTokensTab(body);
+  if (state.activeTab === 'nfts') return renderNftsTab(body);
+  if (state.activeTab === 'lotteries') return renderLotteriesTab(body);
+}
+
+// ---- Wallet tab: balances + send form ----
+
+function renderWalletTab(container) {
+  const bals = state.balances[state.currentAddress] || {};
+  const balanceRows = [];
+  // Always show ENTRO first
+  const entroAmt = bals[NATIVE_TOKEN] || 0;
+  balanceRows.push(`<div class="balance-row">
+    <span class="symbol native">ENTRO</span>
+    <span class="amount">${fmtAmount(entroAmt)}</span>
+  </div>`);
+  for (const [tok, amt] of Object.entries(bals)) {
+    if (tok === NATIVE_TOKEN || amt === 0) continue;
+    const decimals = (state.tokensInfo[tok] && state.tokensInfo[tok].decimals) || DECIMALS;
+    balanceRows.push(`<div class="balance-row">
+      <span class="symbol">${tok}</span>
+      <span class="amount">${fmtAmount(amt, decimals)}</span>
+    </div>`);
+  }
+
+  container.innerHTML = `
+    <div class="panel">
+      <h2>Balances</h2>
+      <div class="panel-body">
+        ${balanceRows.join('')}
+        <button class="secondary" id="btn-refresh" style="margin-top:16px">Refresh</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Send</h2>
+      <div class="panel-body tx-form">
+        <label>Recipient address</label>
+        <input id="send-to" placeholder="E...">
+        <div class="row">
+          <div>
+            <label>Amount</label>
+            <input id="send-amt" type="text" inputmode="decimal" placeholder="0.0">
+          </div>
+          <div>
+            <label>Token</label>
+            <select id="send-token">
+              <option value="ENTRO" selected>ENTRO</option>
+              ${Object.keys(state.tokensInfo).map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <button id="btn-send">Send</button>
+        <div class="error-msg" id="send-err"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Recent activity</h2>
+      <div class="panel-body" id="activity-list">${activityHtml()}</div>
+    </div>
+  `;
+  document.getElementById('btn-refresh').onclick = refreshChainData;
+  document.getElementById('btn-send').onclick = async () => {
+    const to = document.getElementById('send-to').value.trim();
+    const amt = document.getElementById('send-amt').value.trim();
+    const tok = document.getElementById('send-token').value;
+    const err = document.getElementById('send-err');
+    err.textContent = '';
+    if (!addressIsValid(to)) { err.textContent = 'Invalid recipient address'; return; }
+    if (!/^\d+(\.\d+)?$/.test(amt)) { err.textContent = 'Invalid amount'; return; }
+    const decimals = tok === NATIVE_TOKEN ? DECIMALS : (state.tokensInfo[tok]?.decimals || DECIMALS);
+    const units = toUnits(amt, decimals);
+    try {
+      const tx = Tx.transfer(state.currentAddress, to, units, tok);
+      await signAndSubmit(tx);
+    } catch (e) {
+      err.textContent = e.message;
+    }
+  };
+}
+
+// ---- Tokens tab: list registered tokens, create new, mint ----
+
+function renderTokensTab(container) {
+  const ownTokens = Object.entries(state.tokensInfo).filter(
+    ([sym, info]) => info.creator === state.currentAddress
+  );
+  const tokenRows = ownTokens.length === 0
+    ? `<div class="list-empty">You haven't created any tokens yet.</div>`
+    : ownTokens.map(([sym, info]) => `
+        <div class="balance-row">
+          <div>
+            <span class="symbol">${sym}</span>
+            <span style="color:var(--muted);font-size:12px;margin-left:8px">${info.name}</span>
+          </div>
+          <span class="amount">${fmtAmount(info.total_supply, info.decimals)} supply</span>
+        </div>
+      `).join('');
+
+  container.innerHTML = `
+    <div class="panel">
+      <h2>Your tokens</h2>
+      <div class="panel-body">${tokenRows}</div>
+    </div>
+
+    <div class="panel">
+      <h2>Create new token</h2>
+      <div class="panel-body tx-form">
+        <label>Symbol (e.g. CHAOS)</label>
+        <input id="tk-sym">
+        <label>Full name (e.g. Chaos Token)</label>
+        <input id="tk-name">
+        <label>Initial supply (whole units)</label>
+        <input id="tk-supply" type="text" inputmode="decimal" placeholder="1000000">
+        <button id="btn-tk-create">Create token</button>
+        <div class="error-msg" id="tk-err"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Mint additional supply</h2>
+      <div class="panel-body tx-form">
+        <label>Token symbol (must be one you created)</label>
+        <input id="mt-sym">
+        <label>Recipient address</label>
+        <input id="mt-to">
+        <label>Amount (whole units)</label>
+        <input id="mt-amt" type="text" inputmode="decimal">
+        <button id="btn-mt">Mint</button>
+        <div class="error-msg" id="mt-err"></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('btn-tk-create').onclick = async () => {
+    const sym = document.getElementById('tk-sym').value.trim().toUpperCase();
+    const name = document.getElementById('tk-name').value.trim();
+    const supply = document.getElementById('tk-supply').value.trim();
+    const err = document.getElementById('tk-err');
+    if (!sym || !name || !supply) { err.textContent = 'All fields required'; return; }
+    try {
+      const units = toUnits(supply, DECIMALS);
+      const tx = Tx.tokenCreate(state.currentAddress, sym, name, units);
+      await signAndSubmit(tx);
+    } catch (e) { err.textContent = e.message; }
+  };
+  document.getElementById('btn-mt').onclick = async () => {
+    const sym = document.getElementById('mt-sym').value.trim().toUpperCase();
+    const to = document.getElementById('mt-to').value.trim();
+    const amt = document.getElementById('mt-amt').value.trim();
+    const err = document.getElementById('mt-err');
+    if (!addressIsValid(to)) { err.textContent = 'Invalid recipient'; return; }
+    try {
+      const decimals = state.tokensInfo[sym]?.decimals || DECIMALS;
+      const units = toUnits(amt, decimals);
+      const tx = Tx.tokenMint(state.currentAddress, sym, to, units);
+      await signAndSubmit(tx);
+    } catch (e) { err.textContent = e.message; }
+  };
+}
+
+// ---- NFTs tab: collections, mint, random mint ----
+
+function renderNftsTab(container) {
+  // Build the "Your collections" section
+  let collectionsHtml;
+  if (state.ownedCollections.length === 0) {
+    collectionsHtml = `<div class="list-empty">You haven't created any collections yet.</div>`;
+  } else {
+    collectionsHtml = state.ownedCollections.map(c => `
+      <div class="balance-row">
+        <div>
+          <span class="symbol" style="color:var(--accent)">${c.collection_id}</span>
+          <span style="color:var(--muted);font-size:12px;margin-left:8px">${c.name}</span>
+        </div>
+        <span class="amount">${c.minted_count} minted</span>
+      </div>
+    `).join('');
+  }
+
+  // Build the "Your NFTs" section — gallery of cards with images
+  let nftsHtml;
+  if (state.ownedNfts.length === 0) {
+    nftsHtml = `<div class="list-empty">No NFTs owned yet. Mint one below to see it here.</div>`;
+  } else {
+    nftsHtml = `<div class="nft-grid">` + state.ownedNfts.map(nft => {
+      const traits = nft.traits || {};
+      const isLegendary = traits.is_legendary === true || traits.is_legendary === 'true';
+      const traitChips = Object.entries(traits).map(([k, v]) => {
+        const cls = (k === 'is_legendary' && (v === true || v === 'true')) ? 'trait-chip legendary' : 'trait-chip';
+        return `<span class="${cls}">${esc(k)}: ${esc(v)}</span>`;
+      }).join('');
+      const explorerUrl = `https://explorer.entropychain.io/nft/${encodeURIComponent(nft.collection)}/${encodeURIComponent(nft.token_id)}`;
+      const cardId = `nft-${esc(nft.collection)}-${esc(nft.token_id)}`.replace(/[^a-zA-Z0-9-]/g, '_');
+      // Initial render: gradient placeholder. We populate the real image
+      // (if any) asynchronously after this HTML is mounted.
+      const seedHint = nft.entropy_source_seed || nft.entropy_seed || (nft.collection + nft.token_id);
+      const gradient = gradientFromSeed(seedHint.toString().replace(/[^0-9a-f]/gi, '').padEnd(12, '0'));
+      return `
+        <div class="nft-card" id="${cardId}" data-uri="${esc(nft.metadata_uri || '')}">
+          <div class="image-wrap placeholder">
+            <div class="gradient" style="background: ${gradient}"></div>
+            <div class="glyph">⟁</div>
+            <div class="label">${nft.metadata_uri ? 'loading…' : 'no metadata'}</div>
+          </div>
+          <div class="title">${esc(nft.collection)} #${esc(nft.token_id)}${isLegendary ? ' ⭐' : ''}</div>
+          <div class="card-name-slot"></div>
+          <div class="meta">
+            ${nft.name ? `${esc(nft.name)} · ` : ''}
+            Minted at #${nft.minted_at_height || '?'}
+            ${nft.entropy_source_height !== undefined
+              ? (nft.traits_pending ? ` · Traits revealed at #${nft.entropy_source_height}` : ` · Traits from #${nft.entropy_source_height}`)
+              : ''}
+          </div>
+          ${traitChips ? `<div class="traits" style="margin-bottom:10px">${traitChips}</div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="secondary" data-act="transfer" data-col="${esc(nft.collection)}" data-tid="${esc(nft.token_id)}" style="margin-top:0;padding:6px 12px;font-size:12px">
+              Transfer
+            </button>
+            <a href="${explorerUrl}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:12px;text-decoration:none">
+              View ↗
+            </a>
+          </div>
+        </div>
+      `;
+    }).join('') + `</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="panel">
+      <h2>Your NFTs (${state.ownedNfts.length})</h2>
+      <div class="panel-body">${nftsHtml}</div>
+    </div>
+
+    <div class="panel">
+      <h2>Your collections (${state.ownedCollections.length})</h2>
+      <div class="panel-body">${collectionsHtml}</div>
+    </div>
+
+    <div class="panel">
+      <h2>Create collection</h2>
+      <div class="panel-body tx-form">
+        <label>Collection ID (lowercase-with-dashes)</label>
+        <input id="col-id">
+        <label>Name</label>
+        <input id="col-name">
+        <label>Description</label>
+        <input id="col-desc">
+        <button id="btn-col-create">Create collection</button>
+        <div class="error-msg" id="col-err"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Mint NFT (manual traits)</h2>
+      <div class="panel-body tx-form">
+        <label>Collection ID</label>
+        <input id="mn-col">
+        <label>Token ID</label>
+        <input id="mn-tid">
+        <label>Recipient</label>
+        <input id="mn-to">
+        <label>Metadata URI (optional)</label>
+        <input id="mn-uri" placeholder="https://entropychain.io/nfts/.../metadata.json or ipfs://...">
+        <div id="mn-preview" class="preview-block" style="display:none"></div>
+        <label>Traits (JSON, optional)</label>
+        <textarea id="mn-traits" placeholder='{"rarity": "common"}' rows="2"></textarea>
+        <button id="btn-mn">Mint NFT</button>
+        <div class="error-msg" id="mn-err"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Random-mint NFT (entropy beacon traits)</h2>
+      <div class="panel-body tx-form">
+        <p style="margin:0 0 12px 0; color:var(--muted); font-size:13px">
+          Traits are revealed by the beacon of the block after your mint is included,
+          so no one, you included, can know them in advance. Anyone can verify the result.
+        </p>
+        <label>Collection ID</label>
+        <input id="rm-col">
+        <label>Token ID</label>
+        <input id="rm-tid">
+        <label>Recipient</label>
+        <input id="rm-to">
+        <label>Metadata URI (optional)</label>
+        <input id="rm-uri" placeholder="https://entropychain.io/nfts/.../metadata.json or ipfs://...">
+        <div id="rm-preview" class="preview-block" style="display:none"></div>
+        <button id="btn-rm">Random mint</button>
+        <div class="error-msg" id="rm-err"></div>
+      </div>
+    </div>
+  `;
+
+  // Wire up transfer buttons on each NFT card
+  container.querySelectorAll('button[data-act="transfer"]').forEach(btn => {
+    btn.onclick = () => {
+      const col = btn.dataset.col;
+      const tid = btn.dataset.tid;
+      const recipient = prompt(`Transfer ${col} #${tid} to which address?`);
+      if (!recipient) return;
+      const r = recipient.trim();
+      if (!addressIsValid(r)) {
+        showToast('Invalid address', r, 'error');
+        return;
+      }
+      try {
+        const tx = Tx.nftTransfer(state.currentAddress, col, tid, r);
+        signAndSubmit(tx).catch(e => showToast('Transfer failed', e.message, 'error'));
+      } catch (e) {
+        showToast('Transfer failed', e.message, 'error');
+      }
+    };
+  });
+
+  // Asynchronously hydrate each NFT card with image + name from its metadata URI.
+  container.querySelectorAll('.nft-card[data-uri]').forEach(card => {
+    const uri = card.dataset.uri;
+    if (!uri) return;
+    const wrap = card.querySelector('.image-wrap');
+    const nameSlot = card.querySelector('.card-name-slot');
+    if (!wrap) return;
+    fetchMetadata(uri).then(meta => {
+      if (!meta || meta.error) {
+        wrap.querySelector('.label').textContent = meta && meta.error ? 'unreachable' : 'no metadata';
+        return;
+      }
+      if (meta.image) {
+        const img = new Image();
+        img.onload = () => {
+          wrap.classList.remove('placeholder');
+          wrap.innerHTML = '';
+          wrap.appendChild(img);
+        };
+        img.onerror = () => {
+          wrap.querySelector('.label').textContent = 'image error';
+        };
+        img.src = meta.image;
+        img.alt = meta.name || '';
+      }
+      if (meta.name && !meta._isImageOnly && nameSlot) {
+        nameSlot.innerHTML = `<div class="desc">${esc(meta.name)}${meta.description ? ' · ' + esc(meta.description) : ''}</div>`;
+      }
+    });
+  });
+
+  // Wire up live metadata previews under the URI inputs in mint forms.
+  // The same helper handles both manual mint (mn-uri) and random-mint (rm-uri).
+  function wirePreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    if (!input || !preview) return;
+    let lastUri = '';
+    let timer = null;
+    const renderPreview = async (uri) => {
+      preview.style.display = '';
+      preview.className = 'preview-block loading';
+      preview.innerHTML = 'Loading metadata…';
+      const meta = await fetchMetadata(uri);
+      // Bail if input has changed since fetch started
+      if (input.value.trim() !== uri) return;
+      if (!meta || meta.error) {
+        preview.className = 'preview-block error';
+        preview.innerHTML = `Could not load metadata: ${esc(meta && meta.error ? meta.error : 'unknown error')}`;
+        return;
+      }
+      preview.className = 'preview-block';
+      const img = meta.image
+        ? `<img src="${esc(meta.image)}" alt="" onerror="this.style.display='none'">`
+        : `<span style="color:var(--muted);font-size:24px">⟁</span>`;
+      const name = meta.name ? `<div class="name">${esc(meta.name)}</div>` : '';
+      const desc = meta.description ? `<div class="desc">${esc(meta.description)}</div>` : '';
+      const attrs = (meta.attributes && Array.isArray(meta.attributes) && meta.attributes.length > 0)
+        ? `<div class="meta">${meta.attributes.slice(0, 6).map(a =>
+            `${esc(a.trait_type || a.name || '?')}: ${esc(a.value)}`
+          ).join(' · ')}</div>`
+        : '';
+      preview.innerHTML = `
+        <div class="preview-img">${img}</div>
+        <div class="preview-info">
+          ${name || `<div class="name" style="color:var(--muted)">(image only)</div>`}
+          ${desc}
+          ${attrs}
+        </div>
+      `;
+    };
+    input.addEventListener('input', () => {
+      const uri = input.value.trim();
+      if (uri === lastUri) return;
+      lastUri = uri;
+      if (timer) clearTimeout(timer);
+      if (!uri) {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+        return;
+      }
+      // Debounce so we don't fetch on every keystroke
+      timer = setTimeout(() => renderPreview(uri), 500);
+    });
+  }
+  wirePreview('mn-uri', 'mn-preview');
+  wirePreview('rm-uri', 'rm-preview');
+
+  document.getElementById('btn-col-create').onclick = async () => {
+    const id = document.getElementById('col-id').value.trim();
+    const name = document.getElementById('col-name').value.trim();
+    const desc = document.getElementById('col-desc').value.trim();
+    const err = document.getElementById('col-err');
+    if (!id || !name) { err.textContent = 'ID and name required'; return; }
+    try {
+      const tx = Tx.nftCreate(state.currentAddress, id, name, desc);
+      await signAndSubmit(tx);
+    } catch (e) { err.textContent = e.message; }
+  };
+  document.getElementById('btn-mn').onclick = async () => {
+    const col = document.getElementById('mn-col').value.trim();
+    const tid = document.getElementById('mn-tid').value.trim();
+    const to = document.getElementById('mn-to').value.trim();
+    const uri = document.getElementById('mn-uri').value.trim();
+    const traitsStr = document.getElementById('mn-traits').value.trim();
+    const err = document.getElementById('mn-err');
+    if (!addressIsValid(to)) { err.textContent = 'Invalid recipient'; return; }
+    let traits = {};
+    if (traitsStr) {
+      try { traits = JSON.parse(traitsStr); }
+      catch { err.textContent = 'Traits must be valid JSON'; return; }
+    }
+    try {
+      const tx = Tx.nftMint(state.currentAddress, col, tid, to, uri, traits);
+      await signAndSubmit(tx);
+    } catch (e) { err.textContent = e.message; }
+  };
+  document.getElementById('btn-rm').onclick = async () => {
+    const col = document.getElementById('rm-col').value.trim();
+    const tid = document.getElementById('rm-tid').value.trim();
+    const to = document.getElementById('rm-to').value.trim();
+    const uri = document.getElementById('rm-uri').value.trim();
+    const err = document.getElementById('rm-err');
+    if (!addressIsValid(to)) { err.textContent = 'Invalid recipient'; return; }
+    try {
+      const tx = Tx.nftRandomMint(state.currentAddress, col, tid, to, uri);
+      await signAndSubmit(tx);
+    } catch (e) { err.textContent = e.message; }
+  };
+}
+
+// ---- Lotteries tab ----
+
+function renderLotteriesTab(container) {
+  container.innerHTML = `
+    <div class="panel">
+      <h2>Lotteries</h2>
+      <div class="panel-body">
+        <p style="margin:0 0 10px 0; color:var(--muted); font-size:13px">
+          Tickets are paid in ENTRO. Winners are picked from future block beacons, so nobody can rig the draw.
+        </p>
+        <div id="lot-list">${lotteryListHtml()}</div>
+        <div class="error-msg" id="lot-list-err"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Create lottery</h2>
+      <div class="panel-body tx-form">
+        <label>Lottery ID (e.g. jackpot-001)</label>
+        <input id="lc-id">
+        <label>Prize (ENTRO)</label>
+        <input id="lc-prize" type="text" inputmode="decimal" placeholder="50">
+        <label>Ticket price (ENTRO)</label>
+        <input id="lc-tix" type="text" inputmode="decimal" placeholder="5">
+        <label>Draw in N blocks (recommend 20+ for ~10min entry window)</label>
+        <input id="lc-draw" type="number" placeholder="20">
+        <button id="btn-lc">Create lottery</button>
+        <div class="error-msg" id="lc-err"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Look up a lottery by ID</h2>
+      <div class="panel-body tx-form">
+        <label>Lottery ID</label>
+        <input id="lq-id">
+        <button id="btn-lq-show" class="secondary">Show status</button>
+        <button id="btn-lq-enter">Enter (buy ticket)</button>
+        <button id="btn-lq-draw">Submit draw</button>
+        <div id="lq-result" style="margin-top:16px"></div>
+        <div class="error-msg" id="lq-err"></div>
+      </div>
+    </div>
+  `;
+  // Enter / Draw buttons in the list (delegated: the list repaints live).
+  document.getElementById('lot-list').onclick = async (e) => {
+    const err = document.getElementById('lot-list-err');
+    err.textContent = '';
+    const enterId = e.target.closest('[data-lot-enter]')?.dataset.lotEnter;
+    const drawId = e.target.closest('[data-lot-draw]')?.dataset.lotDraw;
+    try {
+      if (enterId) {
+        const lot = (state.lotteries || []).find((l) => l.lottery_id === enterId);
+        const price = lot ? fmtAmount(lot.ticket_price) : '?';
+        if (!confirm(`Buy one ticket for "${enterId}" at ${price} ENTRO (plus a small fee)?`)) return;
+        await signAndSubmit(Tx.lotteryEnter(state.currentAddress, enterId));
+      } else if (drawId) {
+        await signAndSubmit(Tx.lotteryDraw(state.currentAddress, drawId));
+      }
+    } catch (ex) { err.textContent = ex.message; }
+  };
+  document.getElementById('btn-lc').onclick = async () => {
+    const id = document.getElementById('lc-id').value.trim();
+    const prize = document.getElementById('lc-prize').value.trim();
+    const tix = document.getElementById('lc-tix').value.trim();
+    const draw = parseInt(document.getElementById('lc-draw').value);
+    const err = document.getElementById('lc-err');
+    if (!id || !prize || !tix || isNaN(draw)) { err.textContent = 'All fields required'; return; }
+    try {
+      const drawHeight = state.info.height + draw;
+      const tx = Tx.lotteryCreate(state.currentAddress, id, toUnits(prize), toUnits(tix), drawHeight);
+      await signAndSubmit(tx);
+    } catch (e) { err.textContent = e.message; }
+  };
+  document.getElementById('btn-lq-show').onclick = async () => {
+    const id = document.getElementById('lq-id').value.trim();
+    const result = document.getElementById('lq-result');
+    try {
+      const lot = await Api.lottery(id);
+      if (lot.error) { result.innerHTML = `<div class="error-msg">${lot.error}</div>`; return; }
+      // Entries close at the draw block; the draw is allowed once every
+      // beacon in the draw window (draw_blocks, default 1) has been mined.
+      const lastDrawBlock = lot.draw_height + (lot.draw_blocks || 1) - 1;
+      const h = state.info.height;
+      const status = lot.drawn ? 'DRAWN' : (h + 1 < lot.draw_height ? 'OPEN' : (h >= lastDrawBlock ? 'READY' : 'CLOSED'));
+      result.innerHTML = `
+        <div class="lottery-card">
+          <div class="header">
+            <span class="id">${esc(id)}</span>
+            <span class="status ${status.toLowerCase()}">${status}</span>
+          </div>
+          <div class="info">
+            Prize: ${fmtAmount(lot.prize_amount)} ENTRO · Ticket: ${fmtAmount(lot.ticket_price)} ENTRO ·
+            Draw at #${lot.draw_height}${(lot.draw_blocks || 1) > 1 ? `–#${lastDrawBlock}` : ''} (current: #${h}) · ${lot.entrants.length} entrants
+            ${lot.winner ? `<br>Winner: <span style="color:var(--accent-2);font-family:var(--mono)">${lot.winner}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } catch (e) { result.innerHTML = `<div class="error-msg">${e.message}</div>`; }
+  };
+  document.getElementById('btn-lq-enter').onclick = async () => {
+    const id = document.getElementById('lq-id').value.trim();
+    if (!id) return;
+    try {
+      const tx = Tx.lotteryEnter(state.currentAddress, id);
+      await signAndSubmit(tx);
+    } catch (e) { document.getElementById('lq-err').textContent = e.message; }
+  };
+  document.getElementById('btn-lq-draw').onclick = async () => {
+    const id = document.getElementById('lq-id').value.trim();
+    if (!id) return;
+    try {
+      const tx = Tx.lotteryDraw(state.currentAddress, id);
+      await signAndSubmit(tx);
+    } catch (e) { document.getElementById('lq-err').textContent = e.message; }
+  };
+}
+
+// ======================================================================
+// SIGN & SUBMIT
+// ======================================================================
+
+async function signAndSubmit(tx) {
+  const k = state.keys[state.currentAddress];
+  const priv = hexToBytes(k.private_key);
+  const pub = hexToBytes(k.public_key);
+  await signTx(tx, priv, pub);
+  const result = await Api.submit(tx);
+  if (result.ok) {
+    showToast('Transaction submitted', `${tx.tx_type}: ${shortAddr(result.tx_hash, 6)}`);
+    setTimeout(refreshChainData, 3000);
+    return result;
+  } else {
+    showToast('Rejected', result.reason, 'error');
+    throw new Error(result.reason);
+  }
+}
+
+// ======================================================================
+// BOOT
+// ======================================================================
+
+window.addEventListener('load', async () => {
+  render();
+  // Initial load - full render to populate balances/tokens
+  refreshChainData(false);
+  // Periodic refresh updates data quietly without disturbing form inputs
+  setInterval(() => {
+    refreshChainData(true);
+  }, 8000);
+});
+
+// expose for debugging
+window.__entropy = { state, secp, sha256, ripemd160, pubkeyToAddress, txSigningPayload };
+</script>
+
+</body></html>

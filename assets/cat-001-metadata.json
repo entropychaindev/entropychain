@@ -1,0 +1,10 @@
+{
+  "name": "Cat #001",
+  "description": "First image-bearing NFT on EntropyChain.",
+  "image": "https://entropychain.io/nfts/cats/001/image.png",
+  "external_url": "https://explorer.entropychain.io/nft/cats/001",
+  "attributes": [
+    { "trait_type": "Edition", "value": "1 of 1" },
+    { "trait_type": "Genesis", "value": "Day One" }
+  ]
+}

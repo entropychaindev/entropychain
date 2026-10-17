@@ -1,0 +1,11 @@
+{
+  "name": "Legendary Cat #007",
+  "description": "A particularly fluffy specimen of indeterminate origin.",
+  "image": "https://entropychain.io/nfts/legendary-cats/007/cat-007.jpg",
+  "external_url": "https://explorer.entropychain.io/nft/legendary-cats/007",
+  "attributes": [
+    { "trait_type": "Floofiness", "display_type": "number", "value": 9001 },
+    { "trait_type": "Origin", "value": "Indeterminate" },
+    { "trait_type": "Edition", "value": "1 of 1" }
+  ]
+}

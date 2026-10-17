@@ -1,0 +1,7 @@
+# Keep line endings consistent between Windows and the Linux droplet.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.exe binary

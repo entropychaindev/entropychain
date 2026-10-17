@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "EntropyChainMiner",
+  "outputfilename": "EntropyChainMiner",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dir": "frontend",
+  "assetdir": "frontend/dist",
+  "wailsjsdir": "",
+  "author": {
+    "name": "ZZBolt"
+  },
+  "info": {
+    "companyName": "EntropyChain",
+    "productName": "EntropyChain Miner",
+    "productVersion": "0.3.0",
+    "copyright": "EntropyChain",
+    "comments": "CPU miner and wallet for EntropyChain"
+  }
+}

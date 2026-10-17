@@ -1,0 +1,51 @@
+# Seed node for the public testnet (installed at /etc/systemd/system/).
+#
+# Serves P2P on :9001 (public), RPC on 127.0.0.1:8001 and the explorer on
+# 127.0.0.1:8080; Caddy terminates TLS for rpc./explorer.entropychain.io.
+# It also mines on one thread, paying rewards to the faucet wallet, so the
+# faucet stays funded and the chain keeps producing blocks when no one else
+# is mining. --mine-solo lets it mine with no peers (it is the bootstrap
+# node); ordinary miners wait until synced. Remove --mine/--mine-solo/
+# --threads/--miner-address to stop mining.
+#
+# Logs: journalctl -u entropy-node -f
+
+[Unit]
+Description=Entropy Chain Node (Go)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entropy
+Group=entropy
+ExecStart=/home/entropy/bin/entropyd \
+    --testnet-fast \
+    --port 9001 \
+    --rpc-host 127.0.0.1 --rpc-port 8001 \
+    --explorer-addr 127.0.0.1:8080 \
+    --datadir /home/entropy/node \
+    --mine --mine-solo --threads 1 \
+    --miner-address EabaF7x1cVoF8gT3Dw7r9tHF18DUboAHj1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+# Mining yields the CPU to Caddy and the faucet.
+Nice=10
+LimitNOFILE=65536
+
+# Sandboxing
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/entropy/node
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build-venv/
+
+# PyInstaller output (exe is published via GitHub Releases)
+/build/
+/dist/
+
+# Runtime chain data
+chaindata/
+node*/
+test_node_*/
+
+# Wallets / private keys -- NEVER commit
+*wallet*.json
+
+# Backups and editor/OS junk
+*.bak
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Go build output
+go/bin/
+go/desktop/build/bin/
+# Wails-generated JS bindings (the UI uses window.go directly)
+go/desktop/frontend/wailsjs/
+
+# Contains personal author metadata -- keep local only
+assets/archive/whitepaper-testnet1.pdf

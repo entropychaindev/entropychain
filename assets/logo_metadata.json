@@ -1,0 +1,38 @@
+{
+  "name": "EntropyChain Official Logo #1",
+  "description": "Official EntropyChain brand logo. A modern minimalist blockchain identity featuring interconnected blocks forming a swirling entropy vortex — symbolizing verifiable randomness, Argon2id PoW, and unbiased entropy per block. Created with Grok Imagine for the EntropyChain project (entropychain.io). Dark cyberpunk aesthetic with glowing neon cyan and purple accents.",
+  "image": "ipfs://YOUR_IPFS_CID_HERE/image.png",
+  "external_url": "https://entropychain.io",
+  "attributes": [
+    {
+      "trait_type": "Project",
+      "value": "EntropyChain"
+    },
+    {
+      "trait_type": "Category",
+      "value": "Official Brand Asset"
+    },
+    {
+      "trait_type": "Style",
+      "value": "Cyberpunk Minimalist"
+    },
+    {
+      "trait_type": "Color Palette",
+      "value": "Neon Cyan + Purple"
+    },
+    {
+      "trait_type": "Theme",
+      "value": "Verifiable Randomness"
+    },
+    {
+      "trait_type": "Creator",
+      "value": "Grok Imagine"
+    },
+    {
+      "trait_type": "Generation Date",
+      "value": "2026-05-04"
+    }
+  ],
+  "background_color": "000000",
+  "animation_url": null
+}

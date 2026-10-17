@@ -1,0 +1,11 @@
+argon2-cffi
+base58
+click
+cryptography
+ecdsa
+flask
+requests
+websockets
+# Desktop miner (miner_app/) and packaging
+PySide6
+pyinstaller
