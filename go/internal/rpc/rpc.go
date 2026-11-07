@@ -205,6 +205,33 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /rpc/block_by_hash/{hash}", func(w http.ResponseWriter, r *http.Request) {
 		s.writeBlock(w, s.chain.BlockByHash(r.PathValue("hash")))
 	})
+	// Recent beacons in one call, newest first, for pages that chart the
+	// randomness. ?count= (1–500, default 100) blocks below ?before=
+	// (default: just above the tip).
+	m.HandleFunc("GET /rpc/beacons", func(w http.ResponseWriter, r *http.Request) {
+		count, err := strconv.Atoi(r.URL.Query().Get("count"))
+		if err != nil {
+			count = 100
+		}
+		count = max(1, min(count, 500))
+		tip := s.chain.Height()
+		before, err := strconv.ParseInt(r.URL.Query().Get("before"), 10, 64)
+		if err != nil || before > tip+1 {
+			before = tip + 1
+		}
+		list := []map[string]any{}
+		for h := before - 1; h >= 0 && len(list) < count; h-- {
+			b := s.chain.BlockByHeight(h)
+			if b == nil {
+				continue // reorganised away mid-request
+			}
+			list = append(list, map[string]any{
+				"height": h, "block_hash": b.Hash(), "seed": s.chain.Beacon(h),
+				"timestamp": pyjson.FloatNumber(b.Timestamp),
+			})
+		}
+		writeJSON(w, 200, map[string]any{"height": tip, "count": len(list), "beacons": list})
+	})
 	m.HandleFunc("GET /rpc/peers", func(w http.ResponseWriter, r *http.Request) {
 		peers := []p2p.PeerInfo{}
 		if s.node != nil {

@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EntropyChain Live — randomness from every block</title>
+<meta name="description" content="Every EntropyChain block produces a random beacon that nobody can choose in advance. Watch dice, coins, cards and art come straight from the chain, and verify each one in your browser.">
+<meta property="og:title" content="EntropyChain Live">
+<meta property="og:description" content="Dice, coins, cards and art from every block's random beacon, verifiable in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://entropychain.io/live/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #07090d;
+  --panel: #0f161f;
+  --panel-2: #131b27;
+  --border: #1a2433;
+  --border-bright: #2a3a52;
+  --text: #d2dae6;
+  --text-bright: #ffffff;
+  --muted: #6c7990;
+  --dim: #404a5e;
+  --accent: #00d4aa;
+  --accent-glow: rgba(0, 212, 170, 0.4);
+  --accent-2: #ff6b9d;
+  --warn: #ffb454;
+  --bad: #e66767;
+  /* Diverging pair for the byte heatmap (validated for CVD on --panel). */
+  --div-more: #3987e5;
+  --div-less: #e5484d;
+  --div-mid: #262f3c;
+
+  --serif: 'Fraunces', Georgia, serif;
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 212, 170, 0.12), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 30%, rgba(255, 107, 157, 0.06), transparent);
+  background-attachment: fixed;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-2); }
+
+/* ─── Top bar ─── */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 12px; padding: 14px 32px;
+  backdrop-filter: blur(12px);
+  background: rgba(7, 9, 13, 0.75);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; color: var(--text); }
+.brand .triangle { width: 14px; height: 14px; background: var(--accent); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.brand .name-1 { color: var(--accent); }
+.brand .name-2 { color: var(--accent-2); }
+.tag { padding: 2px 8px; font-size: 10px; letter-spacing: 0.1em; border: 1px solid var(--warn); color: var(--warn); border-radius: 3px; }
+nav .spacer { flex: 1; }
+nav .links { display: flex; gap: 4px; }
+nav .links a { color: var(--muted); padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+nav .links a:hover { color: var(--text); background: var(--panel); }
+
+main { max-width: 1180px; margin: 0 auto; padding: 32px 32px 80px; }
+
+/* ─── Hero ─── */
+.hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; margin-bottom: 22px; }
+.hero h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(34px, 6vw, 60px); line-height: 1.05; color: var(--text-bright); }
+.hero h1 .num { font-weight: 500; color: var(--accent); }
+.hero .sub { color: var(--muted); margin-top: 6px; max-width: 640px; }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 12px; color: var(--muted); background: var(--panel); }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.pill.live .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); animation: pulse 1.6s ease-in-out infinite; }
+.pill.live { color: var(--text); }
+.pill.err .dot { background: var(--bad); }
+.pill button { font: inherit; color: var(--accent); background: none; border: 0; cursor: pointer; padding: 0; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+
+.beacon {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 18px; margin-bottom: 18px;
+  display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline;
+}
+.beacon .label { color: var(--muted); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+.beacon .hex { font-size: 15px; color: var(--text-bright); letter-spacing: 0.04em; flex: 1 1 420px; }
+.beacon .hex span { white-space: nowrap; }
+.beacon .hex span:nth-child(odd) { color: var(--accent); }
+.beacon .ok { color: var(--accent); font-size: 12px; white-space: nowrap; }
+.beacon .ok.bad { color: var(--bad); }
+
+/* ─── Draw cards ─── */
+.draws { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 18px; }
+.draw {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  min-height: 236px; position: relative; overflow: hidden;
+}
+.draw h3 { align-self: stretch; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.draw .stage { flex: 1; display: flex; align-items: center; justify-content: center; perspective: 600px; }
+.draw .result { font-size: 13px; color: var(--text-bright); }
+.draw .how { font-size: 10.5px; color: var(--dim); text-align: center; line-height: 1.4; }
+.draw.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { 0% { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 28px var(--accent-glow); } 100% { border-color: var(--border); box-shadow: none; } }
+
+.die { width: 92px; height: 92px; }
+.die rect { fill: #f4f1ea; }
+.die circle { fill: #10161f; }
+.rolling .die { animation: tumble 0.9s cubic-bezier(.3,.7,.4,1); }
+@keyframes tumble { 0% { transform: rotate(0) scale(.7); } 60% { transform: rotate(560deg) scale(1.08); } 100% { transform: rotate(720deg) scale(1); } }
+
+.coin {
+  width: 92px; height: 92px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-family: var(--serif); font-weight: 700; font-size: 15px; letter-spacing: 0.06em;
+  background: radial-gradient(circle at 35% 30%, #ffe3a3, #d9a441 55%, #9a6b1c);
+  color: #3b2706; border: 3px solid #f0c66a; box-shadow: inset 0 0 0 5px rgba(0,0,0,.12);
+}
+.coin.tails { background: radial-gradient(circle at 35% 30%, #eef2f7, #a9b4c2 55%, #6b7787); color: #1d2530; border-color: #c9d2de; }
+.rolling .coin { animation: flip 0.9s ease-out; }
+@keyframes flip { 0% { transform: rotateY(0); } 100% { transform: rotateY(1440deg); } }
+
+.card {
+  width: 74px; height: 104px; border-radius: 8px; background: #f8f6f1; color: #10161f;
+  display: grid; grid-template-rows: auto 1fr auto; padding: 5px 7px;
+  font-family: var(--serif); font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.45);
+}
+.card.red { color: #c8323c; }
+.card .c-top { font-size: 15px; line-height: 1; }
+.card .c-mid { font-size: 40px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.card .c-bot { font-size: 15px; line-height: 1; transform: rotate(180deg); }
+.rolling .card { animation: cardflip 0.9s ease-out; }
+@keyframes cardflip { 0% { transform: rotateY(90deg); } 55% { transform: rotateY(-15deg); } 100% { transform: rotateY(0); } }
+
+.big-num { font-family: var(--serif); font-weight: 500; font-size: 62px; line-height: 1; color: var(--text-bright); font-variant-numeric: tabular-nums; }
+.big-num small { font-size: 16px; color: var(--muted); font-weight: 300; }
+
+.art { width: 112px; height: 112px; border-radius: 10px; display: block; }
+.rolling .art { animation: artin 0.9s ease-out; }
+@keyframes artin { 0% { opacity: 0; transform: scale(.85); filter: blur(6px); } 100% { opacity: 1; transform: none; filter: none; } }
+
+/* ─── Ribbon ─── */
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; margin-bottom: 12px; }
+.panel h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); }
+.panel .note { font-size: 12px; color: var(--muted); }
+.ribbon { display: grid; grid-template-columns: repeat(auto-fill, minmax(14px, 1fr)); gap: 3px; }
+.ribbon button {
+  aspect-ratio: 1; border: 0; border-radius: 3px; cursor: pointer; padding: 0;
+  outline-offset: 2px; transition: transform .12s;
+}
+.ribbon button:hover { transform: scale(1.35); z-index: 1; position: relative; }
+.ribbon button.sel { outline: 2px solid var(--text-bright); }
+.ribbon button.new { animation: pop 0.8s ease-out; }
+@keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.4); } 100% { transform: scale(1); } }
+
+/* ─── Stats ─── */
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 18px; }
+.stats .panel { margin-bottom: 0; }
+.headline { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.headline .v { font-family: var(--serif); font-size: 34px; font-weight: 500; color: var(--text-bright); font-variant-numeric: tabular-nums; }
+.headline .u { color: var(--muted); font-size: 12px; }
+.verdict { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.verdict b { color: var(--accent); font-weight: 500; }
+.verdict b.warn { color: var(--warn); }
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+svg.chart .grid { stroke: var(--border); stroke-width: 1; }
+svg.chart .axis { stroke: var(--border-bright); stroke-width: 1; }
+svg.chart .expect { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .7; }
+svg.chart .bar { fill: var(--accent); }
+svg.chart .hit { fill: transparent; cursor: default; }
+svg.chart .hit:hover + .bar, svg.chart g.col:hover .bar { fill: #3ff0c8; }
+.track-band { fill: rgba(0, 212, 170, 0.16); }
+.heat { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; }
+.heat div { aspect-ratio: 1; border-radius: 2px; }
+.legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); margin-top: 10px; }
+.legend .ramp { flex: 0 1 180px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--div-less), var(--div-mid), var(--div-more)); }
+details.table { margin-top: 12px; font-size: 12px; color: var(--muted); }
+details.table summary { cursor: pointer; }
+details.table table { border-collapse: collapse; margin-top: 8px; }
+details.table td, details.table th { padding: 3px 12px 3px 0; text-align: right; font-variant-numeric: tabular-nums; }
+details.table th { color: var(--muted); font-weight: 400; }
+details.table td { color: var(--text); }
+
+/* ─── Verify ─── */
+.verify-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; }
+.verify-grid > div, .stats > .panel { min-width: 0; }
+.steps { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.steps li { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+.steps .k { color: var(--muted); }
+.steps .h { color: var(--text-bright); word-break: break-all; }
+.steps .arrow { color: var(--accent); }
+pre.code {
+  background: #05070a; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 12px;
+  color: var(--text); overflow-x: auto; white-space: pre; line-height: 1.55;
+}
+pre.code .c { color: var(--dim); }
+.copy { font: inherit; font-size: 12px; color: var(--accent); background: var(--panel-2); border: 1px solid var(--border-bright); border-radius: 6px; padding: 5px 12px; cursor: pointer; margin-top: 8px; }
+.copy:hover { border-color: var(--accent); }
+.why p { color: var(--text); margin-bottom: 10px; font-size: 13px; }
+.why p strong { color: var(--text-bright); font-weight: 500; }
+
+#tip {
+  position: fixed; pointer-events: none; z-index: 100; display: none;
+  background: #05070a; border: 1px solid var(--border-bright); border-radius: 6px;
+  padding: 7px 10px; font-size: 12px; color: var(--text); white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+#tip b { color: var(--text-bright); font-weight: 500; }
+
+footer { text-align: center; color: var(--dim); font-size: 12px; padding: 24px 16px 40px; }
+
+@media (max-width: 1040px) {
+  .draws { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 760px) {
+  nav { padding: 12px 16px; }
+  nav .links a.opt { display: none; }
+  main { padding: 22px 16px 60px; }
+  .draws { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .draw { min-height: 210px; padding: 12px; }
+  .stats, .verify-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/">
+    <div class="triangle"></div>
+    <span><span class="name-1">ENTROPY</span><span class="name-2">CHAIN</span></span>
+  </a>
+  <span class="tag">LIVE</span>
+  <div class="spacer"></div>
+  <div class="links">
+    <a href="/">Home</a>
+    <a class="opt" href="https://explorer.entropychain.io">Explorer</a>
+    <a class="opt" href="https://wallet.entropychain.io">Wallet</a>
+    <a class="opt" href="https://github.com/entropychaindev/entropychain">GitHub</a>
+  </div>
+</nav>
+
+<main>
+  <section class="hero">
+    <div>
+      <h1>Block <span class="num" id="h-num">#…</span></h1>
+      <p class="sub">Every block on EntropyChain produces a random <em>beacon</em> that nobody knows until the
+        block is mined. Everything below comes from that one number, and your browser checks it.</p>
+    </div>
+    <div class="status">
+      <span class="pill" id="pill"><span class="dot"></span><span id="pill-text">connecting…</span></span>
+      <span class="pill" id="age-pill"><span id="age">—</span></span>
+    </div>
+  </section>
+
+  <div class="beacon">
+    <span class="label">Beacon</span>
+    <span class="hex" id="beacon-hex">loading…</span>
+    <span class="ok" id="beacon-ok"></span>
+  </div>
+
+  <section class="draws" id="draws">
+    <div class="draw" id="d-dice">
+      <h3>Dice</h3>
+      <div class="stage" id="dice-stage"></div>
+      <div class="result" id="dice-res">&nbsp;</div>
+      <div class="how">SHA-256(beacon ‖ "dice") mod 6 + 1</div>
+    </div>
+    <div class="draw" id="d-coin">
+      <h3>Coin flip</h3>
+      <div class="stage" id="coin-stage"></div>
+      <div class="result" id="coin-res">&nbsp;</div>
+      <div class="how">SHA-256(beacon ‖ "coin") mod 2</div>
+    </div>
+    <div class="draw" id="d-card">
+      <h3>Card draw</h3>
+      <div class="stage" id="card-stage"></div>
+      <div class="result" id="card-res">&nbsp;</div>
+      <div class="how">SHA-256(beacon ‖ "card") mod 52</div>
+    </div>
+    <div class="draw" id="d-num">
+      <h3>1 – 100</h3>
+      <div class="stage"><div class="big-num" id="num-val">–</div></div>
+      <div class="result" id="num-res">&nbsp;</div>
+      <div class="how">SHA-256(beacon ‖ "number") mod 100 + 1</div>
+    </div>
+    <div class="draw" id="d-art">
+      <h3>Block art</h3>
+      <div class="stage" id="art-stage"></div>
+      <div class="result" id="art-res">&nbsp;</div>
+      <div class="how">the beacon's 32 bytes, drawn</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Recent blocks</h2>
+      <span class="note">Each square is one block's beacon. Click one to replay its draws.</span>
+    </div>
+    <div class="ribbon" id="ribbon"></div>
+  </section>
+
+  <div class="panel-head" style="margin: 26px 0 12px">
+    <h2 style="font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase">Is it really random?</h2>
+    <span class="note" id="window-note"></span>
+  </div>
+  <section class="stats">
+    <div class="panel">
+      <div class="panel-head"><h2>Bit balance</h2></div>
+      <div class="headline"><span class="v" id="bits-v">–</span><span class="u" id="bits-u">of all beacon bits are 1</span></div>
+      <div class="verdict" id="bits-verdict"></div>
+      <svg class="chart" id="bits-chart" viewBox="0 0 520 70" role="img" aria-label="Share of 1 bits against the expected range"></svg>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Dice rolls</h2></div>
+      <div class="headline"><span class="v" id="dice-v">–</span><span class="u">rolls</span></div>
+      <div class="verdict" id="dice-verdict"></div>
+      <svg class="chart" id="dice-chart" viewBox="0 0 520 200" role="img" aria-label="How often each dice face came up"></svg>
+      <details class="table"><summary>Show as table</summary><table id="dice-table"></table></details>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Coin flips</h2></div>
+      <div class="headline"><span class="v" id="coin-v">–</span><span class="u">heads</span></div>
+      <div class="verdict" id="coin-verdict"></div>
+      <svg class="chart" id="coin-chart" viewBox="0 0 520 70" role="img" aria-label="Heads versus tails"></svg>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Every byte value</h2></div>
+      <div class="headline"><span class="v" id="bytes-v">–</span><span class="u">bytes, 256 possible values</span></div>
+      <div class="verdict" id="bytes-verdict"></div>
+      <div class="heat" id="heat" role="img" aria-label="How often each byte value 0 to 255 appears, compared with the expected count"></div>
+      <div class="legend"><span>fewer</span><span class="ramp"></span><span>more than expected</span></div>
+    </div>
+  </section>
+
+  <section class="panel" id="verify">
+    <div class="panel-head">
+      <h2>Check it yourself — block <span id="v-height">…</span></h2>
+      <a class="note" id="v-explorer" href="https://explorer.entropychain.io" target="_blank" rel="noopener">open in explorer ↗</a>
+    </div>
+    <div class="verify-grid">
+      <div>
+        <ol class="steps" id="v-steps"></ol>
+      </div>
+      <div>
+        <p class="note" style="margin-bottom:8px">Paste into any Python 3 to get the same results, with no EntropyChain software involved:</p>
+        <pre class="code" id="v-code"></pre>
+        <button class="copy" id="v-copy">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel why">
+    <div class="panel-head"><h2>Why nobody can pick the result</h2></div>
+    <p>The beacon is <strong>SHA-256d("entropy" + block hash)</strong>. A block's hash only exists once its proof
+      of work is solved, so not even the miner knows the beacon while they are still working on the block.</p>
+    <p>To change the outcome, a miner would have to throw away a block they solved, and its 50 ENTRO
+      reward with it, then solve a new one. That buys them another random roll, not the one they want.
+      Lotteries can combine up to 16 blocks in a row, so steering one would mean discarding blocks over and over.</p>
+    <p>Lottery winners on EntropyChain are chosen exactly the way the dice above are rolled:
+      <strong>SHA-256(beacon + lottery ID) mod number of entrants</strong>.</p>
+  </section>
+</main>
+
+<footer>EntropyChain testnet-4 · built by the Entropy Chain Dev Team · <a href="https://github.com/entropychaindev/entropychain">source on GitHub</a></footer>
+<div id="tip" role="tooltip"></div>
+
+<script>
+'use strict';
+const RPC = (() => {
+  const q = new URLSearchParams(location.search).get('rpc');
+  return q && /^https?:\/\/[\w.:-]+$/.test(q) ? q : 'https://rpc.entropychain.io';
+})();
+const EXPLORER = 'https://explorer.entropychain.io';
+const WINDOW = 500;           // blocks used for the statistics
+const RIBBON = 120;           // blocks shown as squares
+const POLL_MS = 5000;
+
+const $ = (id) => document.getElementById(id);
+const enc = new TextEncoder();
+const isHex64 = (s) => typeof s === 'string' && /^[0-9a-f]{64}$/.test(s);
+const hexToBytes = (h) => Uint8Array.from(h.match(/../g), (x) => parseInt(x, 16));
+const bytesToHex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+const cat = (...parts) => { const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out; };
+const sha256 = async (bytes) => new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+const fmt = (n) => n.toLocaleString('en-US');
+
+// The beacon, recomputed here from the block hash: SHA256d("entropy" ‖ hash).
+async function beaconOf(blockHash) {
+  return bytesToHex(await sha256(await sha256(cat(enc.encode('entropy'), hexToBytes(blockHash)))));
+}
+
+// Same construction as the chain's lottery PickWinner: SHA-256(seed ‖ label) mod n.
+async function pick(beaconHex, label, n) {
+  const h = await sha256(cat(hexToBytes(beaconHex), enc.encode(label)));
+  const hex = bytesToHex(h);
+  return { value: Number(BigInt('0x' + hex) % BigInt(n)), hash: hex };
+}
+
+const SUITS = ['♠', '♥', '♦', '♣'];
+const SUIT_NAMES = ['spades', 'hearts', 'diamonds', 'clubs'];
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const RANK_NAMES = ['Ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King'];
+
+async function drawsFor(b) {
+  const [dice, coin, card, num] = await Promise.all([
+    pick(b.seed, 'dice', 6), pick(b.seed, 'coin', 2), pick(b.seed, 'card', 52), pick(b.seed, 'number', 100),
+  ]);
+  return { dice, coin, card, num };
+}
+
+// ─── State ───
+const blocks = new Map();     // height -> {height, block_hash, seed, timestamp, verified, draws}
+let tip = -1;
+let selected = null;          // null = follow the newest block
+let shown = -1;               // height currently rendered in the draw cards
+let ribbonTop = -1;
+
+async function ingest(list) {
+  const fresh = [];
+  for (const b of list) {
+    if (!Number.isInteger(b.height) || !isHex64(b.block_hash) || !isHex64(b.seed)) continue;
+    const prev = blocks.get(b.height);
+    if (prev && prev.block_hash === b.block_hash) continue;
+    fresh.push(b);
+  }
+  await Promise.all(fresh.map(async (b) => {
+    const recomputed = await beaconOf(b.block_hash);
+    blocks.set(b.height, { ...b, verified: recomputed === b.seed, draws: await drawsFor(b) });
+  }));
+  // Keep only the statistics window plus a little slack.
+  const floor = Math.max(...blocks.keys()) - WINDOW - 20;
+  for (const h of blocks.keys()) if (h < floor && h !== selected) blocks.delete(h);
+  return fresh.length;
+}
+
+async function getJSON(path) {
+  const r = await fetch(RPC + path, { cache: 'no-store' });
+  if (!r.ok) throw new Error(r.status + ' ' + path);
+  return r.json();
+}
+
+async function loadInitial() {
+  const d = await getJSON(`/rpc/beacons?count=${WINDOW}`);
+  await ingest(d.beacons || []);
+  tip = d.height;
+}
+
+async function poll() {
+  try {
+    const info = await getJSON('/rpc/info');
+    if (info.height !== tip || !blocks.has(info.height) || blocks.get(info.height).block_hash !== info.tip_hash) {
+      // A few extra blocks below the tip pick up any reorganisation.
+      const need = Math.min(WINDOW, Math.max(1, info.height - tip) + 3);
+      const d = await getJSON(`/rpc/beacons?count=${need}`);
+      const before = tip;
+      await ingest(d.beacons || []);
+      tip = d.height;
+      render(before !== tip);
+    }
+    setPill('live');
+  } catch (e) {
+    setPill('err', e);
+  }
+}
+
+// ─── Rendering: draw cards ───
+const PIPS = { 1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[26, 26], [50, 50], [74, 74]],
+  4: [[28, 28], [72, 28], [28, 72], [72, 72]], 5: [[27, 27], [73, 27], [50, 50], [27, 73], [73, 73]],
+  6: [[29, 25], [71, 25], [29, 50], [71, 50], [29, 75], [71, 75]] };
+const dieSVG = (n) => `<svg class="die" viewBox="0 0 100 100" aria-hidden="true"><rect x="4" y="4" width="92" height="92" rx="18"/>${PIPS[n].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5"/>`).join('')}</svg>`;
+
+// Block art: a mirrored 8×8 quilt. Bits pick filled cells, bytes pick three
+// hues, a background and each cell's shape — the same beacon always draws the
+// same picture.
+function artSVG(seedHex, size = 112) {
+  const b = hexToBytes(seedHex);
+  const hue = (x) => Math.round(x * 360 / 256);
+  const base = hue(b[4]);
+  const cols = [
+    `hsl(${base} 72% 58%)`,
+    `hsl(${(base + 40 + (b[5] % 100)) % 360} 70% 62%)`,
+    `hsl(${(base + 180 + (b[6] % 60) - 30) % 360} 65% 55%)`,
+  ];
+  const bg = `hsl(${hue(b[7])} 30% 12%)`;
+  const c = 100 / 8;
+  let shapes = '';
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 4; col++) {
+      const i = row * 4 + col;                          // 0..31
+      if (!((b[i >> 3] >> (i & 7)) & 1)) continue;      // bytes 0–3 pick cells
+      const shape = (b[8 + (i >> 2)] >> ((i & 3) * 2)) & 3; // bytes 8–15
+      const fill = cols[(b[16 + (i >> 1)] >> ((i & 1) * 4)) % 3];  // bytes 16–31
+      for (const x of [col, 7 - col]) {
+        const X = x * c, Y = row * c, flip = x !== col;
+        if (shape === 0) shapes += `<rect x="${X + 0.6}" y="${Y + 0.6}" width="${c - 1.2}" height="${c - 1.2}" rx="1.5" fill="${fill}"/>`;
+        else if (shape === 1) shapes += `<circle cx="${X + c / 2}" cy="${Y + c / 2}" r="${c / 2 - 0.8}" fill="${fill}"/>`;
+        else if (shape === 2) {
+          const [ax, ay] = flip ? [X + c, Y + c] : [X, Y + c];
+          shapes += `<path d="M${ax} ${ay} L${X + (flip ? 0 : c)} ${ay} A${c} ${c} 0 0 ${flip ? 1 : 0} ${ax} ${Y} Z" fill="${fill}" opacity=".92"/>`;
+        } else shapes += `<path d="M${X + c / 2} ${Y + 0.6} L${X + c - 0.6} ${Y + c - 0.6} L${X + 0.6} ${Y + c - 0.6} Z" fill="${fill}"/>`;
+      }
+    }
+  }
+  return `<svg class="art" viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true"><rect width="100" height="100" fill="${bg}"/>${shapes}</svg>`;
+}
+
+const tileColor = (seedHex) => {
+  const b = hexToBytes(seedHex.slice(0, 8));
+  return `hsl(${Math.round(b[0] * 360 / 256)} ${55 + (b[1] % 30)}% ${42 + (b[2] % 22)}%)`;
+};
+
+function renderDraws(b, animate) {
+  const { dice, coin, card, num } = b.draws;
+  const cards = ['d-dice', 'd-coin', 'd-card', 'd-num', 'd-art'].map($);
+  if (animate) cards.forEach((el) => { el.classList.remove('rolling', 'flash'); void el.offsetWidth; el.classList.add('rolling', 'flash'); });
+
+  const face = dice.value + 1;
+  $('dice-stage').innerHTML = dieSVG(face);
+  $('dice-res').textContent = `rolled ${face}`;
+
+  const heads = coin.value === 0;
+  $('coin-stage').innerHTML = `<div class="coin ${heads ? '' : 'tails'}">${heads ? 'HEADS' : 'TAILS'}</div>`;
+  $('coin-res').textContent = heads ? 'heads' : 'tails';
+
+  const s = Math.floor(card.value / 13), r = card.value % 13;
+  const red = s === 1 || s === 2;
+  $('card-stage').innerHTML = `<div class="card ${red ? 'red' : ''}" aria-hidden="true"><div class="c-top">${RANKS[r]}${SUITS[s]}</div><div class="c-mid">${SUITS[s]}</div><div class="c-bot">${RANKS[r]}${SUITS[s]}</div></div>`;
+  $('card-res').textContent = `${RANK_NAMES[r]} of ${SUIT_NAMES[s]}`;
+
+  const target = num.value + 1;
+  const el = $('num-val');
+  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / 900);
+      el.textContent = k < 1 ? String(1 + Math.floor(Math.random() * 100)) : String(target);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  } else el.textContent = String(target);
+  $('num-res').textContent = `picked ${target}`;
+
+  $('art-stage').innerHTML = artSVG(b.seed);
+  $('art-res').textContent = `#${fmt(b.height)}'s fingerprint`;
+
+  $('h-num').textContent = '#' + fmt(b.height);
+  $('beacon-hex').innerHTML = b.seed.match(/.{8}/g).map((g) => `<span>${g}</span>`).join(' ');
+  const ok = $('beacon-ok');
+  ok.className = 'ok' + (b.verified ? '' : ' bad');
+  ok.textContent = b.verified ? '✔ recomputed in your browser' : '✗ does not match the block hash';
+}
+
+function renderRibbon(newTip) {
+  const hs = [...blocks.keys()].sort((a, b) => b - a).slice(0, RIBBON);
+  const box = $('ribbon');
+  box.innerHTML = hs.map((h) => {
+    const b = blocks.get(h);
+    const isNew = newTip && ribbonTop >= 0 && h > ribbonTop;
+    return `<button style="background:${tileColor(b.seed)}" data-h="${h}" class="${h === shown ? 'sel' : ''}${isNew ? ' new' : ''}" aria-label="Block ${h}"></button>`;
+  }).join('');
+  ribbonTop = hs[0] ?? -1;
+}
+
+// ─── Rendering: statistics ───
+// Upper-tail p-value for chi-square with k degrees of freedom (Wilson–Hilferty).
+function chiP(x, k) {
+  const z = (Math.cbrt(x / k) - (1 - 2 / (9 * k))) / Math.sqrt(2 / (9 * k));
+  return 0.5 * erfc(z / Math.SQRT2);
+}
+function erfc(x) { // Abramowitz–Stegun 7.1.26
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * Math.exp(-x * x);
+  return x >= 0 ? y : 2 - y;
+}
+const verdict = (p) => p >= 0.01
+  ? `<b>Looks fair</b> — p ≈ ${p.toFixed(2)}. Results this uneven happen by chance ${Math.round(p * 100)}% of the time.`
+  : `<b class="warn">Unusual</b> — p ≈ ${p.toFixed(3)}. Worth watching; 1 in 100 fair samples looks like this.`;
+
+function renderStats() {
+  const hs = [...blocks.keys()].sort((a, b) => b - a).slice(0, WINDOW);
+  const list = hs.map((h) => blocks.get(h));
+  const n = list.length;
+  if (!n) return;
+  $('window-note').textContent = `last ${fmt(n)} blocks, #${fmt(hs[n - 1])} – #${fmt(hs[0])}`;
+
+  // Bits and bytes.
+  let ones = 0;
+  const byteCounts = new Array(256).fill(0);
+  for (const b of list) for (const x of hexToBytes(b.seed)) {
+    byteCounts[x]++;
+    let v = x; while (v) { ones += v & 1; v >>= 1; }
+  }
+  const bits = n * 256;
+  const share = ones / bits;
+  const sigma = 0.5 / Math.sqrt(bits);
+  const zBits = (share - 0.5) / sigma;
+  $('bits-v').textContent = (share * 100).toFixed(2) + '%';
+  $('bits-verdict').innerHTML = verdict(chiP(zBits * zBits, 1)) + ` Expected 50% ± ${(2 * sigma * 100).toFixed(2)}% from ${fmt(bits)} bits.`;
+  drawTrack($('bits-chart'), share, sigma, '1 bits', fmt(ones) + ' of ' + fmt(bits));
+
+  // Dice.
+  const faces = new Array(6).fill(0);
+  let headsN = 0, streak = 0, best = 0, last = null;
+  for (const b of [...list].reverse()) {
+    faces[b.draws.dice.value]++;
+    const hd = b.draws.coin.value === 0;
+    if (hd) headsN++;
+    streak = hd === last ? streak + 1 : 1; last = hd; best = Math.max(best, streak);
+  }
+  const eDie = n / 6;
+  const chiDice = faces.reduce((s, c) => s + (c - eDie) ** 2 / eDie, 0);
+  $('dice-v').textContent = fmt(n);
+  $('dice-verdict').innerHTML = verdict(chiP(chiDice, 5)) + ` χ² = ${chiDice.toFixed(1)} over 6 faces.`;
+  drawBars($('dice-chart'), faces, eDie);
+  $('dice-table').innerHTML = '<tr><th>face</th>' + faces.map((_, i) => `<th>${i + 1}</th>`).join('') + '</tr><tr><th>rolls</th>' + faces.map((c) => `<td>${fmt(c)}</td>`).join('') + `</tr><tr><th>expected</th>${faces.map(() => `<td>${eDie.toFixed(1)}</td>`).join('')}</tr>`;
+
+  // Coin.
+  const hShare = headsN / n;
+  const cSigma = 0.5 / Math.sqrt(n);
+  const zc = (hShare - 0.5) / cSigma;
+  $('coin-v').textContent = (hShare * 100).toFixed(1) + '%';
+  $('coin-verdict').innerHTML = verdict(chiP(zc * zc, 1)) + ` Longest run of the same side: ${best} (about ${Math.round(Math.log2(n))} is typical for ${fmt(n)} flips).`;
+  drawTrack($('coin-chart'), hShare, cSigma, 'heads', `${fmt(headsN)} heads, ${fmt(n - headsN)} tails`);
+
+  // Bytes heatmap: colour by how far each count is from expected, in standard deviations.
+  const nBytes = n * 32, eB = nBytes / 256, sdB = Math.sqrt(eB * (1 - 1 / 256));
+  const chiBytes = byteCounts.reduce((s, c) => s + (c - eB) ** 2 / eB, 0);
+  $('bytes-v').textContent = fmt(nBytes);
+  $('bytes-verdict').innerHTML = verdict(chiP(chiBytes, 255)) + ` χ² = ${chiBytes.toFixed(0)} (about 255 expected).`;
+  $('heat').innerHTML = byteCounts.map((c, i) => {
+    const z = Math.max(-3, Math.min(3, (c - eB) / sdB));
+    const col = z >= 0 ? `color-mix(in oklab, var(--div-more) ${Math.round(z / 3 * 100)}%, var(--div-mid))`
+                       : `color-mix(in oklab, var(--div-less) ${Math.round(-z / 3 * 100)}%, var(--div-mid))`;
+    return `<div style="background:${col}" data-tip="<b>0x${i.toString(16).padStart(2, '0')}</b> (${i}) · seen ${c}× · expected ${eB.toFixed(1)}"></div>`;
+  }).join('');
+}
+
+// A horizontal track: the expected ±2σ band, the 50% line, and the observed value.
+function drawTrack(svg, value, sigma, what, detail) {
+  const W = 520, lo = 0.5 - Math.max(5 * sigma, Math.abs(value - 0.5) * 1.3), hi = 1 - lo;
+  const x = (v) => 10 + (v - lo) / (hi - lo) * (W - 20);
+  const pct = (v) => (v * 100).toFixed(Math.abs(hi - lo) < 0.02 ? 2 : 1) + '%';
+  svg.innerHTML = `
+    <rect class="track-band" x="${x(0.5 - 2 * sigma)}" y="14" width="${x(0.5 + 2 * sigma) - x(0.5 - 2 * sigma)}" height="22" rx="4"/>
+    <line class="axis" x1="10" x2="${W - 10}" y1="25" y2="25"/>
+    <line class="expect" x1="${x(0.5)}" x2="${x(0.5)}" y1="8" y2="42"/>
+    <circle cx="${x(value)}" cy="25" r="7" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>
+    <rect class="hit" x="${x(value) - 14}" y="8" width="28" height="34" data-tip="<b>${(value * 100).toFixed(2)}%</b> ${what} · ${detail}"/>
+    <text x="10" y="60">${pct(lo)}</text>
+    <text x="${x(0.5)}" y="60" text-anchor="middle">50% expected</text>
+    <text x="${W - 10}" y="60" text-anchor="end">${pct(hi)}</text>`;
+}
+
+// Single-series bars with the expected count as a dashed line.
+function drawBars(svg, counts, expected) {
+  const W = 520, H = 200, L = 34, R = 92, B = 26, T = 10;
+  const max = Math.max(...counts, expected) * 1.12;
+  const step = niceStep(max / 4);
+  const top = Math.ceil(max / step) * step;
+  const y = (v) => T + (1 - v / top) * (H - T - B);
+  const bw = (W - L - R) / counts.length;
+  let g = '';
+  for (let v = 0; v <= top + 1e-9; v += step) {
+    g += `<line class="${v === 0 ? 'axis' : 'grid'}" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  counts.forEach((c, i) => {
+    const x0 = L + i * bw + bw * 0.22, w = bw * 0.56, y0 = y(c), h = y(0) - y0;
+    const r = Math.min(4, h);
+    g += `<g class="col"><rect class="hit" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}" data-tip="Face <b>${i + 1}</b> · ${fmt(c)} rolls · ${(c / counts.reduce((a, b) => a + b, 0) * 100).toFixed(1)}%"/>
+      <path class="bar" d="M${x0} ${y(0)} V${y0 + r} Q${x0} ${y0} ${x0 + r} ${y0} H${x0 + w - r} Q${x0 + w} ${y0} ${x0 + w} ${y0 + r} V${y(0)} Z" pointer-events="none"/></g>
+      <text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${i + 1}</text>`;
+  });
+  g += `<line class="expect" x1="${L}" x2="${W - R + 6}" y1="${y(expected)}" y2="${y(expected)}"/><text x="${W - R + 12}" y="${y(expected) - 3}" style="fill:var(--text)">expected</text><text x="${W - R + 12}" y="${y(expected) + 11}" style="fill:var(--text)">${expected.toFixed(1)}</text>`;
+  svg.innerHTML = g;
+}
+function niceStep(raw) {
+  const p = 10 ** Math.floor(Math.log10(raw)), f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+}
+
+// ─── Verify panel ───
+function renderVerify(b) {
+  const { dice, coin, card, num } = b.draws;
+  $('v-height').textContent = '#' + fmt(b.height);
+  $('v-explorer').href = `${EXPLORER}/block/${b.height}`;
+  const short = (h) => h.slice(0, 16) + '…' + h.slice(-8);
+  const s = Math.floor(card.value / 13), r = card.value % 13;
+  $('v-steps').innerHTML = `
+    <li><span class="k">block hash</span><br><span class="h">${b.block_hash}</span></li>
+    <li><span class="k">SHA-256d("entropy" ‖ block hash) = beacon</span><br><span class="h">${b.seed}</span>
+      <br><span class="arrow">${b.verified ? '✔ your browser got the same value as the node' : '✗ mismatch'}</span></li>
+    <li><span class="k">SHA-256(beacon ‖ "dice")</span> <span class="h">${short(dice.hash)}</span><br><span class="arrow">mod 6 = ${dice.value} → rolled ${dice.value + 1}</span></li>
+    <li><span class="k">SHA-256(beacon ‖ "coin")</span> <span class="h">${short(coin.hash)}</span><br><span class="arrow">mod 2 = ${coin.value} → ${coin.value === 0 ? 'heads' : 'tails'}</span></li>
+    <li><span class="k">SHA-256(beacon ‖ "card")</span> <span class="h">${short(card.hash)}</span><br><span class="arrow">mod 52 = ${card.value} → ${RANK_NAMES[r]} of ${SUIT_NAMES[s]}</span></li>
+    <li><span class="k">SHA-256(beacon ‖ "number")</span> <span class="h">${short(num.hash)}</span><br><span class="arrow">mod 100 = ${num.value} → ${num.value + 1}</span></li>`;
+  $('v-code').innerHTML = `<span class="c"># EntropyChain block ${b.height}</span>
+import hashlib
+block_hash = bytes.fromhex("${b.block_hash}")
+beacon = hashlib.sha256(hashlib.sha256(b"entropy" + block_hash).digest()).digest()
+pick = lambda label, n: int.from_bytes(hashlib.sha256(beacon + label.encode()).digest(), "big") % n
+suits, ranks = ["spades", "hearts", "diamonds", "clubs"], "A 2 3 4 5 6 7 8 9 10 J Q K".split()
+card = pick("card", 52)
+print("beacon:", beacon.hex())
+print("dice:  ", pick("dice", 6) + 1)
+print("coin:  ", ["heads", "tails"][pick("coin", 2)])
+print("card:  ", ranks[card % 13], "of", suits[card // 13])
+print("number:", pick("number", 100) + 1)`;
+}
+
+// ─── Glue ───
+function render(newTip) {
+  if (!blocks.size) return;
+  const newest = Math.max(...blocks.keys());
+  const want = selected ?? newest;
+  const b = blocks.get(want) || blocks.get(newest);
+  const animate = b.height !== shown;
+  shown = b.height;
+  renderDraws(b, animate);
+  renderVerify(b);
+  renderRibbon(newTip);
+  renderStats();
+  tickAge();
+}
+
+function setPill(kind, err) {
+  const p = $('pill');
+  p.className = 'pill ' + (kind === 'err' ? 'err' : selected === null ? 'live' : '');
+  if (kind === 'err') { $('pill-text').textContent = 'node unreachable — retrying'; console.warn(err); return; }
+  if (selected === null) $('pill-text').textContent = 'live · following new blocks';
+  else $('pill-text').innerHTML = `viewing #${fmt(selected)} · <button id="back-live">back to live</button>`;
+}
+
+function tickAge() {
+  const b = blocks.get(shown);
+  if (!b) return;
+  const s = Math.max(0, Math.round(Date.now() / 1000 - b.timestamp));
+  const ago = s < 90 ? `${s}s` : s < 5400 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`;
+  $('age').textContent = selected === null ? `mined ${ago} ago · a new block about every 30s` : `mined ${ago} ago`;
+}
+
+$('ribbon').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-h]');
+  if (!btn) return;
+  const h = Number(btn.dataset.h);
+  selected = h === Math.max(...blocks.keys()) ? null : h;
+  setPill('live');
+  render(false);
+});
+$('pill').addEventListener('click', (e) => {
+  if (e.target.id !== 'back-live') return;
+  selected = null;
+  setPill('live');
+  render(false);
+});
+$('v-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('v-code').textContent); $('v-copy').textContent = 'Copied ✔'; }
+  catch { $('v-copy').textContent = 'Select the text to copy'; }
+  setTimeout(() => { $('v-copy').textContent = 'Copy'; }, 1800);
+});
+
+// One tooltip for every element with data-tip (bars, heatmap cells, tracks, ribbon).
+const tipEl = $('tip');
+document.addEventListener('pointermove', (e) => {
+  const t = e.target.closest('[data-tip], .ribbon button[data-h]');
+  if (!t) { tipEl.style.display = 'none'; return; }
+  let html = t.dataset.tip;
+  if (!html) {
+    const b = blocks.get(Number(t.dataset.h));
+    if (!b) return;
+    const { dice, coin, card } = b.draws;
+    html = `Block <b>#${fmt(b.height)}</b> · 🎲 ${dice.value + 1} · ${coin.value === 0 ? 'heads' : 'tails'} · ${RANKS[card.value % 13]}${SUITS[Math.floor(card.value / 13)]}`;
+  }
+  tipEl.innerHTML = html;
+  tipEl.style.display = 'block';
+  const w = tipEl.offsetWidth, x = Math.min(e.clientX + 14, innerWidth - w - 8);
+  tipEl.style.left = Math.max(8, x) + 'px';
+  tipEl.style.top = (e.clientY + 18) + 'px';
+});
+document.addEventListener('pointerleave', () => { tipEl.style.display = 'none'; });
+
+(async function start() {
+  if (!window.crypto?.subtle) { $('pill-text').textContent = 'this browser cannot verify (needs https)'; return; }
+  try {
+    await loadInitial();
+    setPill('live');
+    render(false);
+  } catch (e) {
+    setPill('err', e);
+  }
+  setInterval(poll, POLL_MS);
+  setInterval(tickAge, 1000);
+})();
+</script>
+</body>
+</html>

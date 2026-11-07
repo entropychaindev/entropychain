@@ -90,6 +90,44 @@ func TestLotteriesAndHistory(t *testing.T) {
 	}
 }
 
+// The randomness wall loads recent beacons in one call.
+func TestBeaconsBatch(t *testing.T) {
+	c, err := chain.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	_, pub, _ := crypto.GenerateKeypair()
+	a := crypto.PubkeyToAddress(pub)
+	for range 5 {
+		mineOn(t, c, a)
+	}
+	s := New(c, nil, "")
+	var got struct {
+		Height  int64            `json:"height"`
+		Count   int              `json:"count"`
+		Beacons []map[string]any `json:"beacons"`
+	}
+	for _, tc := range []struct {
+		q     string
+		first float64
+		n     int
+	}{{"count=3", 5, 3}, {"count=3&before=2", 1, 2}, {"count=9999", 5, 6}, {"before=999", 5, 6}} {
+		rec := httptest.NewRecorder()
+		s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/rpc/beacons?"+tc.q, nil))
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatal(err)
+		}
+		if got.Count != tc.n || len(got.Beacons) != tc.n || got.Beacons[0]["height"] != tc.first {
+			t.Fatalf("%s: count=%d first=%v", tc.q, got.Count, got.Beacons[0]["height"])
+		}
+		top := got.Beacons[0]
+		if top["seed"] != c.Beacon(int64(tc.first)) || top["block_hash"] != c.HashAtHeight(int64(tc.first)) {
+			t.Fatalf("%s: beacon/hash mismatch", tc.q)
+		}
+	}
+}
+
 // A browser sends an OPTIONS preflight before POSTing JSON. It must get a
 // 2xx whether or not the node itself adds CORS headers (in production the
 // reverse proxy adds them), or the web wallet cannot submit transactions.
