@@ -38,3 +38,6 @@ assets/archive/whitepaper-testnet1.pdf
 # Entropy Quest browser build (go/README.md: "Entropy Quest")
 quest/quest.wasm
 quest/wasm_exec.js
+
+# Marketing screenshots (large; not part of the site)
+quest-screenshots/

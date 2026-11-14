@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player's guide · Entropy Quest</title>
+<meta name="description" content="How to play Entropy Quest, the RPG where every roll is decided by an EntropyChain block beacon: wallets, heroes, dungeons, combat, loot and verifying runs.">
+<meta property="og:title" content="Entropy Quest · Player's guide">
+<meta property="og:description" content="Summon a hero, raid dungeons, win ENTRO and NFT loot. Every roll comes from a block nobody has mined yet.">
+<meta property="og:image" content="https://entropychain.io/quest/guide/img/boss-fight.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090d; --panel: #0f161f; --panel-2: #131b27; --border: #1a2433; --border-bright: #2a3a52;
+  --text: #d2dae6; --text-bright: #fff; --muted: #7d8aa1; --dim: #48536a;
+  --accent: #00d4aa; --accent-2: #ff6b9d; --gold: #ffcf5c; --hp: #3ccf6e; --bad: #e66767;
+  --r0: #a8b3c2; --r1: #4fd18b; --r2: #4ea3ff; --r3: #b57cff; --r4: #ffb454;
+  --serif: 'Fraunces', Georgia, serif; --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 14.5px; line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(ellipse 70% 45% at 50% -10%, rgba(181,124,255,.13), transparent),
+    radial-gradient(ellipse 60% 50% at 90% 30%, rgba(0,212,170,.07), transparent);
+  background-attachment: fixed;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-2); }
+nav {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px;
+  padding: 12px 28px; background: rgba(7,9,13,.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text-bright); }
+.brand b { font-family: var(--serif); font-weight: 800; font-size: 19px; }
+.brand small { font-size: 10px; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+nav .spacer { flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 8px;
+  background: var(--accent); color: #04110d; font-weight: 700; font-size: 13px;
+}
+.btn:hover { color: #04110d; box-shadow: 0 0 0 3px rgba(0,212,170,.35); }
+
+.wrap { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 40px; max-width: 1180px; margin: 0 auto; padding: 36px 28px 90px; }
+.toc { position: sticky; top: 84px; align-self: start; font-size: 12.5px; }
+.toc b { display: block; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; font-size: 10.5px; margin-bottom: 8px; }
+.toc a { display: block; color: var(--muted); padding: 3px 0 3px 12px; border-left: 2px solid var(--border); }
+.toc a:hover { color: var(--text-bright); border-color: var(--accent); }
+
+header.top h1 { font-family: var(--serif); font-weight: 800; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; color: var(--text-bright); }
+header.top h1 em { font-style: normal; background: linear-gradient(90deg, var(--r3), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+header.top p { margin: 14px 0 0; max-width: 680px; font-size: 15px; }
+section { margin-top: 56px; scroll-margin-top: 80px; }
+h2 { font-family: var(--serif); font-weight: 600; font-size: 28px; color: var(--text-bright); margin-bottom: 12px; display: flex; align-items: baseline; gap: 12px; }
+h2 .n { font-size: 16px; color: var(--accent); font-family: var(--mono); }
+h3 { font-family: var(--serif); font-weight: 600; font-size: 19px; color: var(--text-bright); margin: 26px 0 8px; }
+p { margin: 10px 0; max-width: 760px; }
+ul, ol { margin: 10px 0 10px 22px; max-width: 760px; }
+li { margin: 4px 0; }
+b, strong { color: var(--text-bright); }
+code { background: var(--panel-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 13px; color: var(--text-bright); }
+.gold { color: var(--gold); }
+.muted { color: var(--muted); }
+
+figure { margin: 18px 0; }
+figure img { width: 100%; display: block; border-radius: 14px; border: 1px solid var(--border-bright); box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+figcaption { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin: 16px 0; }
+.tip { border-left: 3px solid var(--accent); }
+.warn { border-left: 3px solid var(--gold); }
+.panel > p:first-child { margin-top: 0; }
+.panel > p:last-child { margin-bottom: 0; }
+
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+.step { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; font-size: 12.5px; color: var(--muted); }
+.step .n { font-family: var(--serif); font-size: 24px; color: var(--accent); line-height: 1; }
+.step b.t { display: block; margin: 6px 0 4px; font-size: 13.5px; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+th { text-align: left; color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--border-bright); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
+
+.classes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+.cls { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.cls .ico { font-size: 28px; }
+.cls h4 { font-family: var(--serif); font-size: 18px; color: var(--text-bright); margin: 4px 0; }
+.cls .main { font-size: 11px; color: var(--accent); letter-spacing: .1em; text-transform: uppercase; }
+.cls p { font-size: 12.5px; color: var(--text); margin: 8px 0 0; }
+.cls .bonus { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+/* Odds bars */
+.odds { margin: 16px 0; }
+.odds .bar { display: flex; height: 38px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-bright); }
+.odds .bar span { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #07090d; white-space: nowrap; overflow: hidden; }
+.odds .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.odds .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.r0 { color: var(--r0); } .r1 { color: var(--r1); } .r2 { color: var(--r2); } .r3 { color: var(--r3); } .r4 { color: var(--r4); }
+
+.xp { display: grid; gap: 6px; margin: 14px 0; max-width: 640px; }
+.xp div { display: grid; grid-template-columns: 70px 1fr 80px; gap: 10px; align-items: center; font-size: 12.5px; }
+.xp .track { height: 10px; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+.xp .track i { display: block; height: 100%; background: linear-gradient(90deg, var(--r3), var(--accent)); border-radius: 6px; }
+
+details { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 10px 0; max-width: 820px; }
+details summary { cursor: pointer; color: var(--text-bright); font-weight: 700; }
+details p { margin: 8px 0 2px; }
+
+footer { text-align: center; color: var(--dim); font-size: 12px; padding: 30px; border-top: 1px solid var(--border); }
+
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); padding: 24px 18px 70px; }
+  .toc { display: none; }
+  .steps, .classes { grid-template-columns: 1fr 1fr; }
+  .duo { grid-template-columns: 1fr; }
+  nav { padding: 10px 16px; }
+  nav .brand small { display: none; }
+}
+@media (max-width: 520px) { .steps, .classes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="../"><span aria-hidden="true">🎲</span><b>Entropy Quest</b><small>player's guide</small></a>
+  <div class="spacer"></div>
+  <a class="btn" href="../">Play now →</a>
+</nav>
+
+<div class="wrap">
+<aside class="toc">
+  <b>Contents</b>
+  <a href="#start">1 · Getting started</a>
+  <a href="#heroes">2 · Heroes</a>
+  <a href="#dungeons">3 · Dungeons</a>
+  <a href="#combat">4 · Combat</a>
+  <a href="#loot">5 · Gold, death & XP</a>
+  <a href="#gear">6 · Items & gear</a>
+  <a href="#fair">7 · Why it's fair</a>
+  <a href="#tips">8 · Tips</a>
+  <a href="#faq">9 · FAQ</a>
+</aside>
+
+<main>
+<header class="top">
+  <h1>Every roll decided by <em>the chain</em>.</h1>
+  <p>Entropy Quest is a dungeon-raiding RPG on EntropyChain. You summon heroes, send them on expeditions, and bring back
+    ENTRO and loot. Every outcome comes from the <b>beacon</b> of a block that hadn't been mined yet when you made your move,
+    so nobody can predict or rig it, not even the game. This guide covers everything you need to play well.</p>
+</header>
+
+<figure>
+  <img src="img/boss-fight.webp" alt="A run replay: Fenn the Quiet, a level 1 Warrior, fights the Goblin King. Both have HP bars, and a log lists the rooms so far." width="1320" height="880">
+  <figcaption>A run replay. The path at the top shows the five rooms; the log below tells the story.</figcaption>
+</figure>
+
+<!-- ───────────────────────────────────────── -->
+<section id="start">
+  <h2><span class="n">01</span>Getting started</h2>
+  <div class="steps">
+    <div class="step"><span class="n">1</span><b class="t">Get a wallet</b>Create one at <a href="https://wallet.entropychain.io" target="_blank" rel="noopener">wallet.entropychain.io</a>. Save the backup it gives you.</div>
+    <div class="step"><span class="n">2</span><b class="t">Get ENTRO</b>Grab free testnet ENTRO from the <a href="https://faucet.entropychain.io" target="_blank" rel="noopener">faucet</a>, or mine some with the desktop app.</div>
+    <div class="step"><span class="n">3</span><b class="t">Connect</b>On the <a href="../">game page</a>, click <b>Connect wallet</b>. Your wallet opens in a small window: unlock it and approve.</div>
+    <div class="step"><span class="n">4</span><b class="t">Play</b>Summon a hero (5 ENTRO), then raid the Goblin Warren (1 ENTRO).</div>
+  </div>
+  <div class="panel tip">
+    <p><b>Your keys stay in your wallet.</b> The game never sees your private key. Every time the game wants to spend ENTRO,
+      your wallet pops up and shows you exactly how much and what for. Nothing is sent until you approve it there.</p>
+  </div>
+  <p>If the wallet window doesn't open, your browser is probably blocking pop-ups for entropychain.io. Allow them and click again.</p>
+  <p>After you approve a move, the game shows its progress: <b>sent</b> → <b>in a block</b> → <b>beacon revealed</b>.
+    The result is decided by the block <em>after</em> yours, so expect to wait one or two blocks.</p>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="heroes">
+  <h2><span class="n">02</span>Heroes</h2>
+  <div class="duo">
+    <figure>
+      <img src="img/hero-reveal.webp" alt="The hero reveal: Fenn the Quiet, Warrior, with STR 8, DEX 5, INT 7, VIT 5, LUCK 5." width="1320" height="815" loading="lazy">
+      <figcaption>A freshly summoned hero. The medallion art is drawn from the beacon itself.</figcaption>
+    </figure>
+    <div>
+      <p>Summoning costs <b class="gold">5 ENTRO</b>. The next block's beacon decides your hero's <b>class</b>, five <b>stats</b>, a <b>name</b>,
+        and a <b>3% chance of Starborn</b> ✨, which adds +2 to every stat.</p>
+      <p>Each stat starts between <b>3 and 9</b> (most land around 6), then the class adds its bonus.</p>
+      <p>Your hero arrives in your wallet as an <b>NFT</b>. You can own as many heroes as you like and switch between them.
+        Heroes never die permanently.</p>
+    </div>
+  </div>
+
+  <h3>The four classes</h3>
+  <div class="classes">
+    <div class="cls"><div class="ico">⚔️</div><h4>Warrior</h4><div class="main">Main stat: STR</div>
+      <p>Strong and hard to kill. <b>Blocks</b> 15% of enemy blows, taking half damage.</p>
+      <div class="bonus">+3 STR · +2 VIT</div></div>
+    <div class="cls"><div class="ico">🗡️</div><h4>Rogue</h4><div class="main">Main stat: DEX</div>
+      <p>Opens every fight with an <b>ambush</b> for 1.5× damage. +8% dodge.</p>
+      <div class="bonus">+3 DEX · +2 LUCK</div></div>
+    <div class="cls"><div class="ico">🔮</div><h4>Mage</h4><div class="main">Main stat: INT</div>
+      <p>Frail, but casts <b>fireballs</b> that never miss and ignore armour. Cast chance: 25% + INT÷3.</p>
+      <div class="bonus">+4 INT · +1 LUCK</div></div>
+    <div class="cls"><div class="ico">🏹</div><h4>Ranger</h4><div class="main">Main stat: DEX</div>
+      <p>Looses a free <b>volley</b> before each fight. +8% hit chance.</p>
+      <div class="bonus">+2 DEX · +2 STR · +1 VIT</div></div>
+  </div>
+
+  <h3>What the stats do</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Combat number</th><th>Formula</th><th>What it means</th></tr>
+    <tr><td><b>HP</b></td><td>30 + 6×VIT + 4×level</td><td>How much damage you can take across the whole run. HP does not refill between rooms.</td></tr>
+    <tr><td><b>Attack</b></td><td>4 + main stat + level÷2</td><td>Damage per hit, before the enemy's armour.</td></tr>
+    <tr><td><b>Defence</b></td><td>VIT÷3</td><td>Taken off every hit you receive.</td></tr>
+    <tr><td><b>Hit</b></td><td>72% + 2×DEX</td><td>Chance to land a blow, minus the enemy's evasion.</td></tr>
+    <tr><td><b>Crit</b></td><td>4% + LUCK</td><td>Chance a hit does double damage.</td></tr>
+    <tr><td><b>Dodge</b></td><td>DEX %</td><td>Lowers the enemy's chance to hit you.</td></tr>
+    <tr><td><b>Loot find</b></td><td>LUCK÷2 %</td><td>Raises item drop chances and pushes drops toward better rarities.</td></tr>
+  </table></div>
+  <p class="muted">Divisions round down. Each level adds +1 to your main stat, +1 VIT every 2 levels and +1 LUCK every 4 levels.</p>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="dungeons">
+  <h2><span class="n">03</span>Dungeons</h2>
+  <figure>
+    <img src="img/dungeons.webp" alt="The hero sheet and the five dungeon cards, each with a risk label and an Enter button." width="1770" height="1082" loading="lazy">
+    <figcaption>Your hero sheet and the dungeon map. Each card tells you whether the fight is fair, risky or deadly for your current level.</figcaption>
+  </figure>
+  <p>Pick a hero, choose gear, and pay the entry fee. <b>One transaction = one whole expedition</b>: the next block's beacon plays out every room and every swing.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Dungeon</th><th class="num">Entry</th><th class="num">Level</th><th class="num">Max win</th><th>Monsters</th><th>Boss</th></tr>
+    <tr><td>👺 <b>Goblin Warren</b></td><td class="num">1</td><td class="num">1+</td><td class="num gold">3</td><td>Goblin, Giant Rat, Kobold</td><td>👑 Goblin King</td></tr>
+    <tr><td>💀 <b>Sunken Crypt</b></td><td class="num">2</td><td class="num">4+</td><td class="num gold">6</td><td>Skeleton, Ghoul, Drowned Knight</td><td>🧙 Lich of the Tide</td></tr>
+    <tr><td>🌋 <b>Ember Mines</b></td><td class="num">4</td><td class="num">8+</td><td class="num gold">12</td><td>Fire Imp, Magma Golem, Ash Wraith</td><td>🐉 Cinder Wyrm</td></tr>
+    <tr><td>🏔️ <b>Frost Spire</b></td><td class="num">7</td><td class="num">13+</td><td class="num gold">21</td><td>Ice Troll, Frost Wolf, Rime Witch</td><td>❄️ Frost Giant Jarl</td></tr>
+    <tr><td>🌀 <b>Void Citadel</b></td><td class="num">12</td><td class="num">19+</td><td class="num gold">36</td><td>Void Stalker, Mind Flayer, Null Knight</td><td>🌀 The Entropy</td></tr>
+  </table></div>
+  <p class="muted">Amounts in ENTRO. "Level" is the recommended hero level; nothing stops you going in early, but it's labelled <span style="color:var(--bad)">Deadly</span> for a reason.</p>
+
+  <h3>What's behind each door</h3>
+  <p>Every run has <b>four rooms, then the boss</b>. Each of the four rooms is rolled:</p>
+  <div class="odds">
+    <div class="bar">
+      <span style="width:55%;background:#e66767">⚔️ Monster 55%</span>
+      <span style="width:15%;background:#ffcf5c">⚠️ Trap 15%</span>
+      <span style="width:15%;background:#4ea3ff">🧰 Chest 15%</span>
+      <span style="width:15%;background:#3ccf6e">⛲ Shrine 15%</span>
+    </div>
+  </div>
+  <ul>
+    <li><b>⚔️ Monster:</b> a fight. Win for gold (8–16% of the entry fee), XP and a 6% item chance.</li>
+    <li><b>⚠️ Trap:</b> roll d20 + DEX + level÷3 against 10 + 3×dungeon number. Make it and you gain XP; miss it and you take damage (less with more Defence).</li>
+    <li><b>🧰 Chest:</b> free gold (15–35% of the fee) and a 12% item chance.</li>
+    <li><b>⛲ Shrine:</b> heals up to 30% of your max HP. If you're already at full health, it's wasted.</li>
+    <li><b>☠️ Boss:</b> 2.5× a normal monster's HP and hits harder. Beat it for the big prize: 42–72% of the fee in gold and a 45% item chance.</li>
+  </ul>
+  <p>Item chances above go up by your <b>loot find</b>.</p>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="combat">
+  <h2><span class="n">04</span>Combat</h2>
+  <p>Fights are automatic, turn by turn. You strike first, then the enemy, until one side falls.</p>
+  <ul>
+    <li><b>Your hit chance</b> = Hit − enemy evasion, kept between 35% and 95%.</li>
+    <li><b>Your damage</b> = Attack + 1d6 − 3 − enemy armour (at least 1). A <b>crit</b> doubles it.</li>
+    <li><b>Enemy hit chance</b> = 80% − your Dodge, kept between 30% and 95%.</li>
+    <li><b>Enemy damage</b> = its attack + 1d6 − 3 − your Defence (at least 1).</li>
+    <li>Class tricks apply on top: the Rogue's ambush, the Ranger's volley, the Mage's fireballs and the Warrior's blocks.</li>
+    <li>A fight lasts at most 30 rounds. If neither side falls, the monster slinks away and you get nothing for it.</li>
+  </ul>
+  <p>Monsters get tougher in deeper dungeons. Each one is tuned so that a hero at the recommended level finds it about as hard as a new hero finds the Goblin Warren.</p>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="loot">
+  <h2><span class="n">05</span>Gold, death & XP</h2>
+  <figure>
+    <img src="img/verify.webp" alt="A run summary: Fell in battle, 0.08 ENTRO won, +10 XP, the payout confirmed in a block, and two green verification checks." width="1320" height="666" loading="lazy">
+    <figcaption>The end-of-run summary, with the ENTRO payout, XP and items, plus the in-browser verification (see section 7).</figcaption>
+  </figure>
+  <h3>Gold</h3>
+  <p>Gold you find is paid to your wallet in <b class="gold">ENTRO</b> right after the run, capped at <b>3× the entry fee</b>.</p>
+  <h3>Falling in battle</h3>
+  <p>If your HP hits zero, your hero <b>crawls out with half the gold</b> found so far. They keep all the XP they earned. There is no permanent death.</p>
+  <h3>Experience</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Source</th><th class="num">XP (× dungeon number)</th></tr>
+    <tr><td>Defeat a monster</td><td class="num">8</td></tr>
+    <tr><td>Defeat the boss</td><td class="num">30</td></tr>
+    <tr><td>Dodge a trap</td><td class="num">2</td></tr>
+    <tr><td>Clear the dungeon and survive</td><td class="num">10 bonus</td></tr>
+  </table></div>
+  <p>Level = 1 + √(XP ÷ 40), up to level 30. Each level gets a little further away:</p>
+  <div class="xp">
+    <div><span>Level 2</span><span class="track"><i style="width:1%"></i></span><span class="muted">40 XP</span></div>
+    <div><span>Level 4</span><span class="track"><i style="width:3%"></i></span><span class="muted">360 XP</span></div>
+    <div><span>Level 8</span><span class="track"><i style="width:15%"></i></span><span class="muted">1,960 XP</span></div>
+    <div><span>Level 13</span><span class="track"><i style="width:44%"></i></span><span class="muted">5,760 XP</span></div>
+    <div><span>Level 19</span><span class="track"><i style="width:100%"></i></span><span class="muted">12,960 XP</span></div>
+  </div>
+  <p class="muted">Those are the recommended levels for each dungeon. Level 30 takes 33,640 XP.</p>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="gear">
+  <h2><span class="n">06</span>Items & gear</h2>
+  <p>Monsters, chests and bosses can drop items. Each item is an <b>NFT</b> sent to your wallet, so you can keep it, equip it, or trade it with other players.</p>
+  <h3>Rarity</h3>
+  <div class="odds">
+    <div class="bar">
+      <span style="width:55%;background:var(--r0)">Common 55%</span>
+      <span style="width:27%;background:var(--r1)">Uncommon 27%</span>
+      <span style="width:12%;background:var(--r2)">Rare</span>
+      <span style="width:5%;background:var(--r3)"></span>
+      <span style="width:1%;background:var(--r4)"></span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--r0)"></i>Common 55%</span><span><i style="background:var(--r1)"></i>Uncommon 27%</span>
+      <span><i style="background:var(--r2)"></i>Rare 12%</span><span><i style="background:var(--r3)"></i>Epic 5%</span>
+      <span><i style="background:var(--r4)"></i>Legendary 1%</span>
+    </div>
+  </div>
+  <p>Those are the odds with zero loot find. Every point of loot find pushes them up the table.</p>
+  <p><b>Power</b> = 2 × dungeon number + 2 × rarity rank + 0–2. Deeper dungeons and rarer drops make stronger items.</p>
+  <h3>Slots</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Slot</th><th>Bonus from an item with power P</th></tr>
+    <tr><td>🗡️ <b>Weapon</b></td><td>+P÷2 + 1 Attack</td></tr>
+    <tr><td>🛡️ <b>Armor</b></td><td>+P÷4 Defence and +2×P HP</td></tr>
+    <tr><td>💍 <b>Charm</b></td><td>+P÷3 Crit, +P÷4 Dodge and +P÷3 loot find</td></tr>
+  </table></div>
+  <p>Choose up to one item per slot on your hero sheet before a run; the sheet previews the new stats.</p>
+  <div class="panel warn"><p>Gear is checked <b>when your run is mined</b>. If you sold or sent an item away before then, your hero goes in without it.</p></div>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="fair">
+  <h2><span class="n">07</span>Why it's fair, and how to check</h2>
+  <p>Each move is a transaction to the game. The result comes from the <b>beacon</b> of the <em>next</em> block:
+    <code>SHA256(SHA256("entropy" ‖ block hash))</code>, mixed with your transaction's hash.</p>
+  <ul>
+    <li><b>You can't pick a result:</b> when you sign, the block that decides the outcome doesn't exist yet.</li>
+    <li><b>The game can't pick one either:</b> the rules are fixed, <a href="https://github.com/entropychaindev/entropychain" target="_blank" rel="noopener">open source</a>, and anyone can recompute every run from the chain.</li>
+    <li><b>Miners can't cheaply steer it:</b> a miner would have to throw away a valid block, and the reward with it, to try for a different beacon.</li>
+  </ul>
+  <p>After any run, click <b>🔍 Verify this run in my browser</b>. Your browser fetches the block from the chain, hashes it into the beacon,
+    then replays the expedition with the game master's own code (compiled to WebAssembly). Two green checks mean the result is exactly what the rules say.</p>
+  <div class="panel tip"><p>Every payout and item is also a normal transaction you can look up on the <a href="https://explorer.entropychain.io" target="_blank" rel="noopener">explorer</a>.</p></div>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="tips">
+  <h2><span class="n">08</span>Tips</h2>
+  <ul>
+    <li><b>Stay on level.</b> The dungeon cards say <span style="color:var(--hp)">Fair fight</span>, <span style="color:var(--gold)">Risky</span> or <span style="color:var(--bad)">Deadly</span>. Deadly means it.</li>
+    <li><b>Armor first.</b> Running out of HP before the boss is the most common way to fall. Armor adds HP and Defence at once.</li>
+    <li><b>Charms pay off over time.</b> Loot find means more drops, and better ones.</li>
+    <li><b>VIT matters for everyone.</b> HP carries through all five rooms; there is no rest between them.</li>
+    <li><b>Build a party.</b> Different classes suit different gear, and a Starborn summon is always possible.</li>
+    <li><b>Expect swings.</b> On average a run returns less ENTRO than it costs; the real prizes are levels and item drops.</li>
+  </ul>
+</section>
+
+<!-- ───────────────────────────────────────── -->
+<section id="faq">
+  <h2><span class="n">09</span>FAQ</h2>
+  <details><summary>Is ENTRO real money?</summary>
+    <p>No. Entropy Quest runs on EntropyChain's <b>testnet</b>. ENTRO here has no real-world value; it's free from the faucet.</p></details>
+  <details><summary>How long does a run take?</summary>
+    <p>Your transaction needs to land in a block, and then the next block reveals the beacon. That's usually a minute or two, depending on how fast blocks are being mined.</p></details>
+  <details><summary>I paid the wrong amount. What happens?</summary>
+    <p>The game refunds it in full and shows the reason under "Your runs". The same happens if you send a hero you don't own or pick a dungeon that doesn't exist. Only the tiny network fee is kept by the network.</p></details>
+  <details><summary>Can I sell or give away a hero?</summary>
+    <p>Yes. Heroes are NFTs, and their level and record go with them to the new owner.</p></details>
+  <details><summary>My payout says "on its way".</summary>
+    <p>The game sends payouts and items as soon as the run is decided; they show ✔ once the next block includes them. If blocks are slow, so is delivery.</p></details>
+  <details><summary>Can the game change the rules?</summary>
+    <p>Not quietly. Every run records the rules version it was played under (shown on the game page as "rules v1"), and the rules are public on GitHub. Any change that could alter a result has to come with a new version number.</p></details>
+</section>
+</main>
+</div>
+
+<footer>
+  Entropy Quest · testnet-4 · ENTRO here has no real-world value ·
+  <a href="../">play</a> · <a href="https://github.com/entropychaindev/entropychain">open source</a> · Entropy Chain Dev Team
+</footer>
+</body>
+</html>
