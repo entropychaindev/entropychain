@@ -34,3 +34,7 @@ go/desktop/frontend/wailsjs/
 
 # Contains personal author metadata -- keep local only
 assets/archive/whitepaper-testnet1.pdf
+
+# Entropy Quest browser build (go/README.md: "Entropy Quest")
+quest/quest.wasm
+quest/wasm_exec.js

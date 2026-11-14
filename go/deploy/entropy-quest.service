@@ -1,0 +1,47 @@
+# Entropy Quest game master (installed at /etc/systemd/system/).
+#
+# Follows the local node over RPC, resolves heroes and expeditions from the
+# block beacons, and pays out from the game wallet. It keeps no database:
+# every start rebuilds the game from the chain beginning at --start, and the
+# payouts it owes come out with the same hashes, so nothing is paid twice.
+# The API listens on 127.0.0.1:8095; Caddy serves it at
+# https://entropychain.io/quest/api/.
+#
+# --start is the block height the game launched at. Never change it on a
+# running game: an earlier start would replay older transfers as game moves.
+#
+# Logs: journalctl -u entropy-quest -f
+
+[Unit]
+Description=Entropy Quest game master
+After=entropy-node.service
+Wants=entropy-node.service
+
+[Service]
+Type=simple
+User=entropy
+Group=entropy
+ExecStart=/home/entropy/bin/questd \
+    --rpc http://127.0.0.1:8001 \
+    --listen 127.0.0.1:8095 \
+    --wallet /home/entropy/data/quest-wallet.json \
+    --site https://entropychain.io/quest/ \
+    --start START_HEIGHT
+Restart=on-failure
+RestartSec=5
+Nice=5
+
+# Sandboxing: it only reads its wallet and talks to localhost.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

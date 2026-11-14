@@ -203,6 +203,24 @@ func NewTx(txType, sender string, data map[string]any, fee int64) (*Transaction,
 	return tx, nil
 }
 
+// NewTxAt builds a transaction with a caller-chosen timestamp and nonce, so
+// the same inputs always give the same hash. Services that must never send a
+// payment twice use it: a resubmission is rejected as a duplicate.
+func NewTxAt(txType, sender string, data map[string]any, fee int64, timestamp float64, nonce string) (*Transaction, error) {
+	tx := &Transaction{
+		TxType:    txType,
+		Sender:    sender,
+		Timestamp: pyjson.FloatNumber(timestamp),
+		Nonce:     nonce,
+		Data:      data,
+		Fee:       fee,
+	}
+	if err := tx.finalize(); err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
+
 // NewCoinbase builds the block reward transaction.
 func NewCoinbase(miner string, reward, height int64) *Transaction {
 	tx, err := NewTx(TxCoinbase, "", map[string]any{

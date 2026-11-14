@@ -186,6 +186,18 @@ button.danger { background: var(--error); color: white; }
 }
 .account-menu .add-action:hover { background: var(--bg); }
 
+.cx-banner {
+  background: rgba(0, 212, 170, 0.12); border-bottom: 1px solid var(--border);
+  padding: 8px 16px; font-size: 12px; color: var(--text); text-align: center;
+}
+.cx-list { margin: 0 0 14px 18px; font-size: 13px; line-height: 1.8; }
+.cx-mono { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.cx-amount { font-size: 28px; font-weight: 600; margin: 4px 0 12px; }
+.cx-amount span { font-size: 14px; color: var(--muted); font-weight: 400; }
+.cx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cx-table td { padding: 6px 8px 6px 0; border-top: 1px solid var(--border); vertical-align: top; }
+.cx-table td:first-child { color: var(--muted); white-space: nowrap; width: 1%; }
+
 .modal-bg {
   position: fixed; inset: 0; background: rgba(0,0,0,0.7);
   display: flex; align-items: center; justify-content: center; z-index: 100;
@@ -1194,6 +1206,7 @@ function renderUnlock(stored) {
       state.unlocked = true;
       showToast('Unlocked', shortAddr(state.currentAddress));
       await refreshChainData();
+      processConnectQueue();
     } catch (e) {
       err.textContent = 'Wrong passphrase';
     }
@@ -2217,11 +2230,170 @@ async function signAndSubmit(tx) {
 }
 
 // ======================================================================
+// WALLET CONNECT
+// A site opens this wallet in a popup — window.open(walletUrl + '#connect')
+// — and talks to it with postMessage, using the client in connect.js.
+// Messages are {ec: 1, id, method, params}. The wallet listens only to the
+// window that opened it, answers only at that window's origin, and asks the
+// user before it shares an address or signs anything.
+//   connect                            -> {address, network}
+//   sendTransaction {to, amount, data} -> {tx_hash, from}
+// amount is in base units (1 ENTRO = 100000000). data adds labelled fields
+// to the ENTRO transfer (strings, safe integers, booleans, lists of strings);
+// it can never change the recipient, amount or token.
+// ======================================================================
+
+const CONNECT_MODE = !!window.opener && location.hash.startsWith('#connect');
+const CONNECTED_SITES_KEY = 'entropy_connected_sites_v1';
+const connectQueue = [];
+let connectBusy = false;
+
+function connectedSites() {
+  try { return JSON.parse(localStorage.getItem(CONNECTED_SITES_KEY) || '{}'); } catch { return {}; }
+}
+function rememberSite(origin) {
+  const s = connectedSites();
+  s[origin] = Date.now();
+  try { localStorage.setItem(CONNECTED_SITES_KEY, JSON.stringify(s)); } catch { /* private mode */ }
+}
+function connectReply(req, payload) {
+  try { req.source.postMessage({ ec: 1, id: req.id, ...payload }, req.origin); } catch { /* opener gone */ }
+}
+
+if (CONNECT_MODE) {
+  window.addEventListener('message', (e) => {
+    const m = e.data;
+    if (!m || m.ec !== 1 || e.source !== window.opener || typeof m.method !== 'string') return;
+    if (m.method === 'ready') return;
+    connectQueue.push({ origin: e.origin, source: e.source, id: m.id, method: m.method, params: m.params || {} });
+    processConnectQueue();
+  });
+  window.opener.postMessage({ ec: 1, method: 'ready' }, '*');  // carries nothing private
+}
+
+// One request at a time; requests wait while the wallet is locked.
+async function processConnectQueue() {
+  if (connectBusy || !connectQueue.length) return;
+  if (!state.unlocked) { showConnectBanner(); return; }
+  connectBusy = true;
+  const req = connectQueue.shift();
+  try {
+    if (req.method === 'connect') await handleConnect(req);
+    else if (req.method === 'sendTransaction') await handleSendTransaction(req);
+    else connectReply(req, { error: 'Unknown method: ' + req.method });
+  } catch (e) {
+    connectReply(req, { error: e.message || String(e) });
+  }
+  connectBusy = false;
+  showConnectBanner();
+  processConnectQueue();
+}
+
+// Resolves true on approve, false on reject or Escape.
+function askUser(html, okLabel) {
+  return new Promise((resolve) => {
+    showModal(`${html}
+      <div class="modal-actions">
+        <button class="secondary" id="cx-no">Reject</button>
+        <button id="cx-yes">${esc(okLabel)}</button>
+      </div>`, { persistent: true });
+    let done = false;
+    const onKey = (e) => { if (e.key === 'Escape') finish(false); };
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      document.removeEventListener('keydown', onKey);
+      closeModal();
+      resolve(v);
+    };
+    document.addEventListener('keydown', onKey);
+    document.getElementById('cx-yes').onclick = () => finish(true);
+    document.getElementById('cx-no').onclick = () => finish(false);
+  });
+}
+
+async function handleConnect(req) {
+  const addr = state.currentAddress;
+  if (!connectedSites()[req.origin]) {
+    const ok = await askUser(`
+      <h2>Connect to this site?</h2>
+      <p class="lede"><strong style="color:var(--text)">${esc(req.origin)}</strong> wants to:</p>
+      <ul class="cx-list"><li>see your address <span class="cx-mono">${esc(shortAddr(addr))}</span></li>
+        <li>ask you to approve ENTRO payments (you confirm each one)</li></ul>
+      <p class="lede">It never sees your private key.</p>`, 'Connect');
+    if (!ok) { connectReply(req, { error: 'The user rejected the connection', code: 4001 }); return; }
+    rememberSite(req.origin);
+  }
+  connectReply(req, { result: { address: addr, network: state.info?.network_tag || 'testnet-4' } });
+}
+
+const RESERVED_DATA_KEYS = new Set(['recipient', 'amount', 'token']);
+
+function cleanConnectData(data) {
+  if (data == null) return {};
+  if (typeof data !== 'object' || Array.isArray(data)) throw new Error('data must be an object');
+  const out = {};
+  const keys = Object.keys(data);
+  if (keys.length > 12) throw new Error('data has too many fields');
+  for (const k of keys) {
+    if (!/^[a-z_][a-z0-9_]{0,31}$/.test(k)) throw new Error('bad data field name: ' + k);
+    if (RESERVED_DATA_KEYS.has(k)) throw new Error(`data cannot set "${k}"`);
+    const v = data[k];
+    const okStr = (s, n) => typeof s === 'string' && s.length <= n;
+    if (okStr(v, 200) || typeof v === 'boolean' || Number.isSafeInteger(v)) out[k] = v;
+    else if (Array.isArray(v) && v.length <= 10 && v.every((x) => okStr(x, 100))) out[k] = [...v];
+    else throw new Error(`data field "${k}" has an unsupported value`);
+  }
+  return out;
+}
+
+async function handleSendTransaction(req) {
+  const p = req.params;
+  const from = state.currentAddress;
+  if (!addressIsValid(p.to)) throw new Error('Invalid recipient address');
+  if (!Number.isSafeInteger(p.amount) || p.amount <= 0) throw new Error('amount must be a positive whole number of base units');
+  const extra = cleanConnectData(p.data);
+  const tx = Tx.transfer(from, p.to, p.amount);
+  Object.assign(tx.data, extra);
+  const rows = Object.entries(extra).map(([k, v]) =>
+    `<tr><td>${esc(k)}</td><td class="cx-mono">${esc(Array.isArray(v) ? (v.join(', ') || '—') : String(v))}</td></tr>`).join('');
+  const ok = await askUser(`
+    <h2>Approve payment</h2>
+    <p class="lede"><strong style="color:var(--text)">${esc(req.origin)}</strong> asks you to send:</p>
+    <div class="cx-amount">${fmtAmount(p.amount)} <span>ENTRO</span></div>
+    <table class="cx-table">
+      <tr><td>to</td><td class="cx-mono">${esc(p.to)}</td></tr>
+      <tr><td>from</td><td class="cx-mono">${esc(from)}</td></tr>
+      <tr><td>network fee</td><td class="cx-mono">${fmtAmount(tx.fee)} ENTRO</td></tr>
+      ${rows}
+    </table>`, 'Approve & send');
+  if (!ok) { connectReply(req, { error: 'The user rejected the payment', code: 4001 }); return; }
+  const result = await signAndSubmit(tx);
+  connectReply(req, { result: { tx_hash: result.tx_hash, from } });
+}
+
+function showConnectBanner() {
+  if (!CONNECT_MODE) return;
+  let b = document.getElementById('cx-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'cx-banner';
+    b.className = 'cx-banner';
+    document.body.prepend(b);
+  }
+  const waiting = connectQueue.length && !state.unlocked;
+  b.innerHTML = waiting
+    ? `🔗 <strong>${esc(connectQueue[0].origin)}</strong> is waiting. Unlock your wallet to continue.`
+    : '🔗 Wallet Connect: keep this window open while you use the site. Each payment asks for your approval.';
+}
+
+// ======================================================================
 // BOOT
 // ======================================================================
 
 window.addEventListener('load', async () => {
   render();
+  showConnectBanner();
   // Initial load - full render to populate balances/tokens
   refreshChainData(false);
   // Periodic refresh updates data quietly without disturbing form inputs

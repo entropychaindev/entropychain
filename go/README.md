@@ -99,7 +99,35 @@ All `rpc_server.py` endpoints, with the same response shapes:
 `/rpc/lottery/<id>`, `/rpc/entropy/<height>`, `/rpc/mempool`,
 `/rpc/history/<addr>`, `POST /rpc/submit_tx`.
 
-Added: `/rpc/block/<height>`, `/rpc/block_by_hash/<hash>`, `/rpc/peers`.
+Added: `/rpc/block/<height>`, `/rpc/block_by_hash/<hash>`, `/rpc/peers`,
+`/rpc/lotteries`, `/rpc/beacons?count=&before=` (up to 500 recent beacons).
+
+## Entropy Quest
+
+An expedition RPG played with ordinary ENTRO transfers to the game's
+address (`data.game = "entropy-quest"`). The beacon of the block after a
+player's transaction decides the result, so nobody can choose it.
+
+- `internal/quest`: the rules (heroes, items, dungeons, combat). Pure
+  functions of chain data. `go test -run Balance -v ./internal/quest`
+  prints the economy table.
+- `internal/questmaster`: replays blocks into game state and lists the
+  transactions owed (hero and item NFTs, payouts, refunds). Each one is
+  deterministic, so a resend is rejected as a duplicate.
+- `cmd/questd`: the game master service: follows a node, signs and sends
+  what it owes, serves `/api/...` (see `deploy/entropy-quest.service`).
+- `cmd/questwasm`: the rules for the browser, so the game page can rerun any
+  expedition with the game master's own code:
+
+```bash
+GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o ../quest/quest.wasm ./cmd/questwasm
+cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ../quest/
+```
+
+The page (`../quest/index.html`) talks to the web wallet through Wallet
+Connect (`../connect.js`): the wallet opens in a popup and the player
+approves every payment there. `?api=`, `?rpc=` and `?wallet=` point the page
+at a local game master, node and wallet for testing.
 
 ## Compatibility
 
@@ -168,6 +196,8 @@ Go before relying on the chain.
 ```
 cmd/entropyd        node binary
 cmd/entropy         wallet CLI
+cmd/questd          Entropy Quest game master
+cmd/questwasm       Entropy Quest rules for the browser
 internal/params     network identity and consensus constants
 internal/pyjson     Python-compatible canonical JSON
 internal/crypto     secp256k1, addresses, Base58Check
@@ -180,5 +210,7 @@ internal/p2p        websocket gossip, sync, orphan handling, banning
 internal/rpc        HTTP JSON API and client
 internal/wallet     wallet.json (plaintext / encrypted)
 internal/compat     cross-implementation tests against testdata/vectors.json
+internal/quest      Entropy Quest rules
+internal/questmaster Entropy Quest game state and payouts
 desktop/            Wails desktop miner (app.go backend, frontend/dist UI)
 ```

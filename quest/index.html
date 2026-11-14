@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entropy Quest — an RPG decided by the blockchain</title>
+<meta name="description" content="Summon a hero, raid dungeons and win ENTRO on EntropyChain. Every fight is decided by a block beacon nobody can predict, and you can verify every roll.">
+<meta property="og:title" content="Entropy Quest">
+<meta property="og:description" content="An expedition RPG on EntropyChain. Heroes and loot are NFTs; every roll is verifiable.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://entropychain.io/quest/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #07090d;
+  --panel: #0f161f;
+  --panel-2: #131b27;
+  --panel-3: #18222f;
+  --border: #1a2433;
+  --border-bright: #2a3a52;
+  --text: #d2dae6;
+  --text-bright: #ffffff;
+  --muted: #7d8aa1;
+  --dim: #48536a;
+  --accent: #00d4aa;
+  --accent-glow: rgba(0, 212, 170, 0.35);
+  --accent-2: #ff6b9d;
+  --gold: #ffcf5c;
+  --hp: #3ccf6e;
+  --hp-low: #e5484d;
+  --bad: #e66767;
+  /* Rarity: the usual game colours, always shown with the rarity's name. */
+  --r0: #a8b3c2;
+  --r1: #4fd18b;
+  --r2: #4ea3ff;
+  --r3: #b57cff;
+  --r4: #ffb454;
+
+  --serif: 'Fraunces', Georgia, serif;
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 14px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(181, 124, 255, 0.13), transparent),
+    radial-gradient(ellipse 60% 50% at 90% 30%, rgba(0, 212, 170, 0.07), transparent);
+  background-attachment: fixed;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-2); }
+button { font: inherit; cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 16px; border-radius: 8px; border: 1px solid transparent;
+  background: var(--accent); color: #04110d; font-weight: 700; font-size: 13px;
+  transition: transform .08s, box-shadow .15s, background .15s;
+}
+.btn:hover { box-shadow: 0 0 0 3px var(--accent-glow); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn.ghost { background: transparent; color: var(--text); border-color: var(--border-bright); font-weight: 500; }
+.btn.ghost:hover { border-color: var(--accent); box-shadow: none; }
+.btn.gold { background: var(--gold); color: #2a1d00; }
+.btn.gold:hover { box-shadow: 0 0 0 3px rgba(255, 207, 92, .35); }
+.btn.small { padding: 5px 11px; font-size: 12px; }
+
+/* ─── Top bar ─── */
+nav {
+  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 12px;
+  padding: 12px 28px; background: rgba(7, 9, 13, .78); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text-bright); }
+.brand .sigil { font-size: 20px; }
+.brand b { font-family: var(--serif); font-weight: 800; font-size: 19px; letter-spacing: .01em; }
+.brand small { font-size: 10px; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; margin-left: 2px; }
+nav .spacer { flex: 1; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--border-bright); font-size: 12px; color: var(--text);
+}
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+.chip .bal { color: var(--gold); font-weight: 700; }
+nav .home { color: var(--muted); font-size: 13px; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 28px 28px 80px; }
+h2.sec { font-family: var(--serif); font-weight: 600; font-size: 22px; color: var(--text-bright); margin: 34px 0 14px; }
+h2.sec small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 10px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+.muted { color: var(--muted); }
+.note { color: var(--muted); font-size: 12px; }
+
+/* ─── Landing ─── */
+.hero-banner { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: center; padding: 26px 0 8px; }
+.hero-banner h1 { font-family: var(--serif); font-weight: 800; font-size: clamp(38px, 6vw, 68px); line-height: 1; color: var(--text-bright); }
+.hero-banner h1 em { font-style: normal; background: linear-gradient(90deg, var(--r3), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-banner p.lede { margin: 16px 0 22px; color: var(--text); max-width: 560px; font-size: 15px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.step { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.step b { display: block; color: var(--text-bright); margin: 4px 0 2px; font-size: 13px; }
+.step span { font-size: 12px; color: var(--muted); }
+.step .n { font-family: var(--serif); font-size: 22px; color: var(--accent); }
+.showcase { display: grid; place-items: center; }
+.showcase .stack { position: relative; width: 300px; height: 300px; }
+.showcase .stack > div { position: absolute; }
+
+/* ─── Hero sheet ─── */
+.hero-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.hero-tab {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--border); color: var(--text); font-size: 12px;
+}
+.hero-tab.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.hero-tab svg { width: 26px; height: 26px; }
+.sheet { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 20px; }
+.portrait { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.portrait svg { width: 180px; height: 180px; filter: drop-shadow(0 8px 26px rgba(0,0,0,.6)); }
+.portrait .name { font-family: var(--serif); font-size: 21px; font-weight: 600; color: var(--text-bright); line-height: 1.15; }
+.portrait .cls { font-size: 12px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; border: 1px solid currentColor; }
+.badge.star { color: var(--gold); }
+.badge.pend { color: var(--muted); }
+.xpbar { width: 100%; height: 8px; border-radius: 4px; background: var(--panel-3); overflow: hidden; }
+.xpbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--r3), var(--accent)); border-radius: 4px; }
+.lvl { font-family: var(--serif); font-size: 30px; font-weight: 800; color: var(--text-bright); line-height: 1; }
+.lvl small { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 400; }
+.statgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 6px; text-align: center; }
+.stat b { display: block; font-size: 20px; color: var(--text-bright); font-family: var(--serif); }
+.stat span { font-size: 10px; letter-spacing: .12em; color: var(--muted); }
+.derived { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 14px; font-size: 12px; }
+.derived div { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+.derived b { color: var(--text-bright); font-weight: 500; }
+.derived .up { color: var(--accent); font-size: 11px; margin-left: 4px; }
+.record { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.record b { color: var(--text-bright); }
+.slots { display: grid; gap: 8px; }
+.slot { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 8px 10px; min-height: 52px; }
+.slot.full { border-style: solid; }
+.slot .ico { font-size: 22px; width: 30px; text-align: center; }
+.slot .what { flex: 1; min-width: 0; }
+.slot .what b { display: block; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot .what span { font-size: 11px; color: var(--muted); }
+.slot select { max-width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border-bright); border-radius: 6px; padding: 4px; font: inherit; font-size: 12px; }
+.rar0 { color: var(--r0); } .rar1 { color: var(--r1); } .rar2 { color: var(--r2); } .rar3 { color: var(--r3); } .rar4 { color: var(--r4); }
+
+/* ─── Dungeons ─── */
+.dungeons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.dg {
+  position: relative; overflow: hidden; border-radius: 14px; border: 1px solid var(--border); background: var(--panel);
+  padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 250px;
+}
+.dg::before { content: ''; position: absolute; inset: 0; opacity: .22; background: var(--tint); pointer-events: none; }
+.dg > * { position: relative; }
+.dg .emo { font-size: 34px; line-height: 1; }
+.dg h3 { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--text-bright); line-height: 1.15; }
+.dg p { font-size: 12px; color: var(--muted); flex: 1; }
+.dg .meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.dg .meta b { color: var(--gold); }
+.risk { font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.risk.ok { color: var(--hp); } .risk.hard { color: var(--gold); } .risk.deadly { color: var(--hp-low); }
+
+/* ─── Lists ─── */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.list { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.row:last-child { border-bottom: 0; }
+.row .ico { font-size: 18px; width: 26px; text-align: center; }
+.row .main { flex: 1; min-width: 0; }
+.row .main b { font-weight: 500; color: var(--text-bright); }
+.row .main span { display: block; font-size: 11px; color: var(--muted); }
+.row .amt { font-weight: 700; white-space: nowrap; }
+.row .amt.win { color: var(--gold); }
+.row button.linkish { background: none; border: 0; color: var(--accent); font-size: 12px; }
+.row.click { cursor: pointer; border-radius: 8px; }
+.row.click:hover { background: var(--panel-2); }
+.empty { color: var(--muted); font-size: 13px; padding: 14px 4px; }
+.lb-rank { width: 26px; text-align: right; color: var(--muted); font-size: 12px; }
+
+/* ─── Summon card ─── */
+.summon { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; }
+.summon .orb { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; font-size: 54px;
+  background: radial-gradient(circle at 40% 35%, rgba(181,124,255,.55), rgba(0,212,170,.12) 60%, transparent 70%);
+  animation: float 4s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-6px); } }
+.summon h3 { font-family: var(--serif); font-size: 22px; color: var(--text-bright); margin-bottom: 6px; }
+
+/* ─── Overlay (waiting, replay, reveal) ─── */
+.overlay { position: fixed; inset: 0; z-index: 80; background: rgba(3, 5, 8, .86); backdrop-filter: blur(6px);
+  display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 40px 16px; }
+.ov { width: min(880px, 100%); background: var(--panel); border: 1px solid var(--border-bright); border-radius: 18px; padding: 22px; position: relative; }
+.ov .x { position: absolute; top: 12px; right: 12px; background: none; border: 0; color: var(--muted); font-size: 22px; line-height: 1; padding: 6px; }
+.ov h3 { font-family: var(--serif); font-size: 24px; color: var(--text-bright); font-weight: 600; }
+.ov .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.phases { display: flex; flex-direction: column; gap: 10px; margin: 20px 0 8px; }
+.phase { display: flex; gap: 12px; align-items: center; font-size: 13px; color: var(--dim); }
+.phase .pi { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-bright); display: grid; place-items: center; font-size: 12px; flex: none; }
+.phase.done { color: var(--text); } .phase.done .pi { border-color: var(--accent); background: var(--accent); color: #04110d; }
+.phase.now { color: var(--text-bright); } .phase.now .pi { border-color: var(--accent); border-top-color: transparent; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.path { display: flex; align-items: center; gap: 0; margin: 18px 0 14px; }
+.path .node { width: 44px; height: 44px; border-radius: 50%; background: var(--panel-2); border: 2px solid var(--border-bright);
+  display: grid; place-items: center; font-size: 20px; flex: none; transition: all .3s; }
+.path .node.on { border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); transform: scale(1.08); }
+.path .node.past { opacity: .75; }
+.path .node.dead { border-color: var(--hp-low); }
+.path .link { flex: 1; height: 2px; background: var(--border-bright); }
+.arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 14px; padding: 18px; min-height: 190px; }
+.fighter { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+.fighter .face { font-size: 54px; line-height: 1.1; height: 66px; display: grid; place-items: center; }
+.fighter .face svg { width: 66px; height: 66px; }
+.fighter .who { font-family: var(--serif); font-size: 16px; color: var(--text-bright); text-align: center; }
+.hpbar { width: 100%; max-width: 220px; height: 10px; border-radius: 5px; background: var(--panel-3); overflow: hidden; }
+.hpbar i { display: block; height: 100%; background: var(--hp); border-radius: 5px; transition: width .25s ease-out, background .25s; }
+.hpbar i.low { background: var(--hp-low); }
+.hpnum { font-size: 11px; color: var(--muted); }
+.vs { font-family: var(--serif); font-size: 18px; color: var(--dim); }
+.shake { animation: shake .3s; }
+@keyframes shake { 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+.float { position: absolute; top: -6px; font-weight: 800; font-size: 18px; pointer-events: none; animation: rise .9s ease-out forwards; text-shadow: 0 2px 8px #000; }
+.float.dmg { color: var(--hp-low); } .float.crit { color: var(--gold); font-size: 22px; } .float.miss { color: var(--muted); }
+.float.heal { color: var(--hp); } .float.spell { color: var(--r3); font-size: 22px; } .float.gold { color: var(--gold); }
+@keyframes rise { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-46px); } }
+.log { margin-top: 12px; max-height: 170px; overflow-y: auto; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.log div { color: var(--muted); } .log div b { color: var(--text-bright); font-weight: 500; }
+.log div.good { color: var(--hp); } .log div.bad { color: var(--hp-low); } .log div.loot { color: var(--gold); }
+.ov .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+.summary { margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.sum { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+.sum b { display: block; font-family: var(--serif); font-size: 26px; color: var(--text-bright); }
+.sum span { font-size: 11px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.sum b.gold { color: var(--gold); }
+.loot { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.lootcard { flex: 1 1 220px; border-radius: 12px; padding: 12px; background: var(--bg); border: 1px solid currentColor; display: flex; gap: 10px; align-items: center; animation: pop .5s ease-out; }
+.lootcard .ico { font-size: 28px; }
+.lootcard b { display: block; color: var(--text-bright); font-weight: 500; }
+.lootcard span { font-size: 11px; }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.05); } 100% { transform: none; opacity: 1; } }
+.outs { margin-top: 12px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.verify { margin-top: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 12px; }
+.verify .ok { color: var(--accent); } .verify .bad { color: var(--bad); }
+.verify code { color: var(--text-bright); word-break: break-all; }
+.levelup { margin-top: 12px; text-align: center; font-family: var(--serif); font-size: 22px; color: var(--gold); animation: pop .6s ease-out; }
+
+.reveal { display: grid; place-items: center; text-align: center; gap: 10px; padding: 10px 0; }
+.reveal svg { width: 200px; height: 200px; animation: summonin 1.4s cubic-bezier(.2,.8,.2,1); }
+@keyframes summonin { 0% { transform: scale(.2) rotate(-200deg); opacity: 0; filter: blur(8px); } 100% { transform: none; opacity: 1; filter: none; } }
+
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100; background: var(--panel-2);
+  border: 1px solid var(--border-bright); border-radius: 10px; padding: 10px 16px; font-size: 13px; display: none; max-width: calc(100% - 32px); }
+#toast.err { border-color: var(--bad); }
+
+footer { text-align: center; color: var(--dim); font-size: 12px; padding: 30px 16px 40px; }
+
+@media (max-width: 1080px) {
+  .dungeons { grid-template-columns: repeat(3, 1fr); }
+  .sheet { grid-template-columns: 200px 1fr; }
+  .sheet .gearcol { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  nav { padding: 10px 16px; }
+  nav .home, .brand small { display: none; }
+  .brand b { font-size: 16px; }
+  .chip { white-space: nowrap; padding: 5px 8px; gap: 6px; }
+  main { padding: 18px 16px 60px; }
+  .hero-banner, .cols, .summon { grid-template-columns: 1fr; }
+  .showcase { display: none; }
+  .steps { grid-template-columns: 1fr; }
+  .sheet { grid-template-columns: 1fr; }
+  .dungeons { grid-template-columns: repeat(2, 1fr); }
+  .statgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .stat b { font-size: 17px; }
+  .derived { grid-template-columns: repeat(2, 1fr); }
+  .arena { grid-template-columns: 1fr; }
+  .vs { display: none; }
+  .summary { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .sum b { font-size: 20px; }
+  .overlay { padding: 12px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="./"><span class="sigil" aria-hidden="true">🎲</span><b>Entropy Quest</b><small>on EntropyChain</small></a>
+  <div class="spacer"></div>
+  <a class="home" href="/">EntropyChain ↗</a>
+  <span id="acct"></span>
+</nav>
+
+<main id="main"></main>
+
+<footer>
+  Entropy Quest · testnet-4 · ENTRO here has no real-world value ·
+  <a href="https://github.com/entropychaindev/entropychain">open source</a> ·
+  every result is decided by a <a href="/live/">block beacon</a>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="overlay-root"></div>
+
+<script>
+'use strict';
+// ─── Settings (overridable for local testing: ?api=&rpc=&wallet=) ───
+const QS = new URLSearchParams(location.search);
+const okURL = (v) => v && /^(https?:\/\/[\w.:-]+)?\/?[\w./-]*$/.test(v);
+const API = okURL(QS.get('api')) ? QS.get('api').replace(/\/$/, '') : '/quest/api';
+const RPC = okURL(QS.get('rpc')) ? QS.get('rpc').replace(/\/$/, '') : 'https://rpc.entropychain.io';
+const WALLET = okURL(QS.get('wallet')) ? QS.get('wallet') : 'https://wallet.entropychain.io/';
+const EXPLORER = 'https://explorer.entropychain.io';
+const COIN = 100000000;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const coins = (u) => { const v = Number(u) / COIN; return v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 4 : 2 }); };
+const short = (a, n = 6) => (a && a.length > 2 * n + 1 ? a.slice(0, n) + '…' + a.slice(-4) : a || '');
+const fmt = (n) => Number(n).toLocaleString('en-US');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
+};
+
+// ─── Game content shown in the UI ───
+const CLASS_ICON = { Warrior: '⚔️', Rogue: '🗡️', Mage: '🔮', Ranger: '🏹' };
+const CLASS_BLURB = {
+  Warrior: 'Strong and hard to kill. Sometimes blocks half a blow.',
+  Rogue: 'Quick and slippery. Opens every fight with an ambush.',
+  Mage: 'Frail, but fireballs ignore armour and never miss.',
+  Ranger: 'Accurate. Looses a free volley before each fight.',
+};
+const SLOT_ICON = { weapon: '🗡️', armor: '🛡️', charm: '💍' };
+const RARITY = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+const DUNGEON_ART = {
+  1: { emo: '👺', tint: 'radial-gradient(circle at 30% 20%, #4fd18b, transparent 70%)' },
+  2: { emo: '💀', tint: 'radial-gradient(circle at 30% 20%, #4ea3ff, transparent 70%)' },
+  3: { emo: '🌋', tint: 'radial-gradient(circle at 30% 20%, #ff7a45, transparent 70%)' },
+  4: { emo: '🏔️', tint: 'radial-gradient(circle at 30% 20%, #9fe7ff, transparent 70%)' },
+  5: { emo: '🌀', tint: 'radial-gradient(circle at 30% 20%, #b57cff, transparent 70%)' },
+};
+const FOE_ICON = {
+  'Goblin': '👺', 'Giant Rat': '🐀', 'Kobold': '🦎', 'Goblin King': '👑',
+  'Skeleton': '💀', 'Ghoul': '🧟', 'Drowned Knight': '🫧', 'Lich of the Tide': '🧙',
+  'Fire Imp': '😈', 'Magma Golem': '🗿', 'Ash Wraith': '👻', 'Cinder Wyrm': '🐉',
+  'Ice Troll': '🧌', 'Frost Wolf': '🐺', 'Rime Witch': '🧝', 'Frost Giant Jarl': '❄️',
+  'Void Stalker': '🕷️', 'Mind Flayer': '🦑', 'Null Knight': '♞', 'The Entropy': '🌀',
+};
+const ROOM_ICON = { monster: '⚔️', boss: '☠️', trap: '⚠️', chest: '🧰', shrine: '⛲' };
+
+// Level from XP: 1 + floor(sqrt(xp / 40)), capped at 30 (as in the rules).
+const levelOf = (xp) => Math.min(30, 1 + Math.floor(Math.sqrt(Math.floor(xp / 40))));
+
+// ─── Portrait: a medallion drawn from the beacon that summoned the hero ───
+function portraitSVG(h, size = 180) {
+  const b = (h.seed || '0'.repeat(64)).match(/../g).map((x) => parseInt(x, 16));
+  const hue = Math.round(b[0] * 360 / 256), hue2 = (hue + 60 + b[1] % 120) % 360;
+  let petals = '';
+  const n = 8 + (b[2] % 3) * 2;
+  for (let i = 0; i < n; i++) {
+    const a = (360 / n) * i, rx = 10 + b[3 + (i % 6)] % 12, ry = 28 + b[9 + (i % 6)] % 14;
+    petals += `<ellipse cx="50" cy="${50 - ry * 0.85}" rx="${rx * .55}" ry="${ry * .55}" transform="rotate(${a} 50 50)" fill="hsl(${i % 2 ? hue : hue2} 70% ${46 + (b[15 + i % 8] % 18)}%)" opacity=".85"/>`;
+  }
+  let dots = '';
+  for (let i = 0; i < 16; i++) {
+    const a = (Math.PI * 2 * i) / 16, r = 44;
+    if (b[20 + (i % 12)] % 3) dots += `<circle cx="${50 + r * Math.cos(a)}" cy="${50 + r * Math.sin(a)}" r="1.6" fill="hsl(${hue2} 80% 75%)"/>`;
+  }
+  const ring = h.starborn ? 'var(--gold)' : `hsl(${hue} 50% 40%)`;
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">
+    <defs><radialGradient id="pg${esc(h.id)}" cx="50%" cy="45%"><stop offset="0" stop-color="hsl(${hue} 45% 22%)"/><stop offset="1" stop-color="#0a0f16"/></radialGradient></defs>
+    <circle cx="50" cy="50" r="48" fill="url(#pg${esc(h.id)})" stroke="${ring}" stroke-width="${h.starborn ? 2.4 : 1.4}"/>
+    <g>${petals}</g>${dots}
+    <circle cx="50" cy="50" r="17" fill="#0a0f16" stroke="hsl(${hue2} 60% 60%)" stroke-width="1.2"/>
+    <text x="50" y="57" text-anchor="middle" font-size="19">${CLASS_ICON[h.class] || '❔'}</text>
+    ${h.starborn ? '<text x="50" y="16" text-anchor="middle" font-size="9">✨</text>' : ''}
+  </svg>`;
+}
+
+// ─── Networking ───
+async function getJSON(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return r.json();
+}
+const api = (p) => getJSON(API + p);
+const rpc = (p) => getJSON(RPC + p);
+
+// ─── State ───
+const S = {
+  cfg: null, addr: store.get('eq_addr', null), player: null, balance: null,
+  heroId: null, pending: store.get('eq_pending', []), board: [], activity: [], overlay: null,
+};
+let wallet = null;
+
+function toast(msg, err = false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = err ? 'err' : '';
+  t.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.style.display = 'none'; }, 5200);
+}
+
+// ─── WebAssembly rules (the game master's own code, for previews and checks) ───
+let wasmP = null;
+function loadRules() {
+  if (wasmP) return wasmP;
+  wasmP = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'wasm_exec.js';
+    s.onload = async () => {
+      try {
+        const go = new Go();
+        const res = await WebAssembly.instantiateStreaming(fetch('quest.wasm'), go.importObject);
+        go.run(res.instance);
+        resolve(true);
+      } catch (e) { reject(e); }
+    };
+    s.onerror = () => reject(new Error('could not load the rules'));
+    document.head.appendChild(s);
+  });
+  return wasmP;
+}
+const callRules = (fn, arg) => { const out = JSON.parse(window[fn](JSON.stringify(arg))); if (out.error) throw new Error(out.error); return out; };
+
+// ─── Wallet ───
+function ensureWallet() {
+  if (!wallet) wallet = new EntropyWallet(WALLET);
+  return wallet;
+}
+async function connect() {
+  try {
+    const { address } = await ensureWallet().connect();
+    S.addr = address;
+    store.set('eq_addr', address);
+    toast('Connected ' + short(address));
+    await refreshPlayer();
+    render();
+  } catch (e) { toast(e.message, true); }
+}
+function disconnect() {
+  S.addr = null; S.player = null; S.balance = null;
+  store.set('eq_addr', null);
+  render();
+}
+
+async function pay(amount, data, label) {
+  const w = ensureWallet();
+  const res = await w.sendTransaction({ to: S.cfg.game_address, amount, data: { game: S.cfg.game, ...data } });
+  if (res.from !== S.addr) { S.addr = res.from; store.set('eq_addr', res.from); }
+  S.pending.push({ tx: res.tx_hash, label, at: Date.now() });
+  store.set('eq_pending', S.pending);
+  return res.tx_hash;
+}
+
+// ─── Data refresh ───
+async function refreshPublic() {
+  try {
+    const [cfg, lb, act] = await Promise.all([api('/config'), api('/leaderboard'), api('/activity')]);
+    S.cfg = cfg; S.board = lb.heroes; S.activity = act.runs;
+  } catch (e) { console.warn(e); }
+}
+async function refreshPlayer() {
+  if (!S.addr) return;
+  try {
+    const [p, bal] = await Promise.all([api('/player/' + S.addr), rpc('/rpc/balance/' + S.addr + '/ENTRO').catch(() => null)]);
+    S.player = p;
+    S.balance = bal ? bal.balance : null;
+    if (!p.heroes.find((h) => h.id === S.heroId)) S.heroId = p.heroes[0]?.id || null;
+  } catch (e) { console.warn(e); }
+}
+
+// ─── Rendering ───
+// What the main view shows, minus the block height, which changes every block.
+const dataKey = () => JSON.stringify([S.addr, S.heroId, S.player && { ...S.player, height: 0 }, S.board, S.activity,
+  S.cfg && { ...S.cfg, height: 0, tip: 0 }]);
+let lastKey = '';
+
+function render() {
+  lastKey = dataKey();
+  renderAccount();
+  const main = $('main');
+  if (!S.cfg) { main.innerHTML = '<div class="empty">Loading the game…</div>'; return; }
+  let html = '';
+  if (!S.addr) html += landingHTML();
+  else if (!S.player) html += '<div class="empty">Loading your heroes…</div>';
+  else if (!S.player.heroes.length) html += summonHTML(true);
+  else html += sheetHTML() + dungeonsHTML() + inventoryAndRunsHTML() + summonHTML(false);
+  html += worldHTML();
+  main.innerHTML = html;
+  wire();
+  updateGearPreview();
+}
+
+function renderAccount() {
+  $('acct').innerHTML = S.addr
+    ? `<span class="chip"><span class="dot"></span>${esc(short(S.addr))} · <span class="bal">${S.balance == null ? '…' : coins(S.balance)} ENTRO</span>
+         <button class="btn ghost small" id="b-disc" title="Forget this address">✕</button></span>`
+    : `<button class="btn" id="b-conn">Connect wallet</button>`;
+  $('b-conn')?.addEventListener('click', connect);
+  $('b-disc')?.addEventListener('click', disconnect);
+}
+
+function landingHTML() {
+  const c = S.cfg;
+  const demo = S.board[0];
+  return `<section class="hero-banner">
+    <div>
+      <h1>Every roll decided by <em>the chain</em>.</h1>
+      <p class="lede">Summon a hero, raid dungeons and bring back ENTRO and loot. Nobody can predict or rig a fight,
+        not even the game: each outcome comes from the beacon of a block that hasn't been mined yet when you set out.
+        Heroes and items are NFTs you own and can trade.</p>
+      <button class="btn" id="b-conn2">Connect wallet to play</button>
+      <span class="note" style="margin-left:10px">No wallet yet? <a href="${esc(WALLET)}" target="_blank" rel="noopener">Create one</a>, then grab free ENTRO from the <a href="https://faucet.entropychain.io" target="_blank" rel="noopener">faucet</a>.</span>
+      <div class="steps" style="margin-top:26px">
+        <div class="step"><span class="n">1</span><b>Summon · ${coins(c.summon_fee)} ENTRO</b><span>The next block's beacon rolls your hero's class and stats.</span></div>
+        <div class="step"><span class="n">2</span><b>Raid · from ${coins(c.dungeons[0].fee)} ENTRO</b><span>Pick a dungeon and your gear. One block later, watch the run play out.</span></div>
+        <div class="step"><span class="n">3</span><b>Loot & level up</b><span>Gold is paid in ENTRO; items arrive as NFTs. Verify every roll yourself.</span></div>
+      </div>
+    </div>
+    <div class="showcase">${demo ? `<div style="text-align:center">${portraitSVG(demo, 240)}<div class="note" style="margin-top:8px">Top hero: <b style="color:var(--text-bright)">${esc(demo.name)}</b> · level ${demo.level} ${esc(demo.class)}</div></div>`
+      : `<div style="font-size:120px">🐉</div>`}</div>
+  </section>`;
+}
+
+function summonHTML(first) {
+  const c = S.cfg;
+  return `<h2 class="sec">${first ? 'Summon your first hero' : 'Summon another hero'}</h2>
+  <div class="panel summon">
+    <div class="orb" aria-hidden="true">✨</div>
+    <div>
+      <h3>${first ? 'Every adventure starts with a hero' : 'Build a party'}</h3>
+      <p class="muted" style="margin-bottom:12px">Pay ${coins(c.summon_fee)} ENTRO. The beacon of the block after yours decides the class
+        (Warrior, Rogue, Mage or Ranger), five stats, a name, and a 3% chance of a <span style="color:var(--gold)">Starborn</span> hero with +2 to everything.
+        Your hero arrives in your wallet as an NFT.</p>
+      <button class="btn gold" id="b-summon">Summon · ${coins(c.summon_fee)} ENTRO</button>
+    </div>
+  </div>`;
+}
+
+function hero() { return S.player?.heroes.find((h) => h.id === S.heroId); }
+function ownedItems() { return S.player?.items || []; }
+
+function gearSel(h) {
+  const saved = store.get('eq_gear_' + h.id, {});
+  const items = ownedItems();
+  const out = {};
+  for (const slot of ['weapon', 'armor', 'charm']) {
+    const it = items.find((i) => i.id === saved[slot] && i.slot === slot);
+    if (it) out[slot] = it;
+  }
+  return out;
+}
+
+function sheetHTML() {
+  const hs = S.player.heroes;
+  const h = hero();
+  const tabs = hs.length > 1 ? `<div class="hero-tabs">${hs.map((x) =>
+    `<button class="hero-tab ${x.id === h.id ? 'on' : ''}" data-hero="${esc(x.id)}">${portraitSVG(x, 26)}${esc(x.name)} · ${x.level}</button>`).join('')}</div>` : '';
+  const span = h.xp_next ? h.xp_next - h.xp_level : 1;
+  const pct = h.xp_next ? Math.max(2, Math.round((h.progress.xp - h.xp_level) / span * 100)) : 100;
+  const pr = h.progress;
+  const sel = gearSel(h);
+  const slot = (s) => {
+    const choices = ownedItems().filter((i) => i.slot === s);
+    const cur = sel[s];
+    return `<div class="slot ${cur ? 'full' : ''}"><span class="ico">${SLOT_ICON[s]}</span>
+      <div class="what">${cur ? `<b class="rar${cur.rarity}">${esc(cur.name)}</b><span>${RARITY[cur.rarity]} · power ${cur.power}</span>`
+        : `<b class="muted">No ${s}</b><span>${choices.length ? 'choose one →' : 'find one in a dungeon'}</span>`}</div>
+      ${choices.length ? `<select data-slot="${s}" aria-label="${s}"><option value="">none</option>${choices.map((i) =>
+        `<option value="${esc(i.id)}" ${cur && cur.id === i.id ? 'selected' : ''}>${esc(i.name)} (${i.power})</option>`).join('')}</select>` : ''}
+    </div>`;
+  };
+  return `${tabs}<div class="panel sheet">
+    <div class="portrait">${portraitSVG(h)}
+      <div class="name">${esc(h.name)}</div>
+      <div class="cls">${CLASS_ICON[h.class]} ${esc(h.class)}</div>
+      <div>${h.starborn ? '<span class="badge star">✨ Starborn</span> ' : ''}${h.minted ? '' : '<span class="badge pend">NFT minting…</span>'}</div>
+    </div>
+    <div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px">
+        <div class="lvl">Level ${h.level} <small>${fmt(pr.xp)} XP${h.xp_next ? ` · ${fmt(h.xp_next - pr.xp)} to next` : ' · max'}</small></div>
+      </div>
+      <div class="xpbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="XP to next level"><i style="width:${pct}%"></i></div>
+      <p class="note" style="margin:10px 0 12px">${CLASS_BLURB[h.class]}</p>
+      <div class="statgrid">${[['STR', h.str], ['DEX', h.dex], ['INT', h.int], ['VIT', h.vit], ['LUCK', h.luck]].map(([k, v]) =>
+        `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('')}</div>
+      <div class="derived" id="derived"></div>
+      <div class="record"><span>Runs <b>${pr.runs}</b></span><span>Boss kills <b>${pr.clears}</b></span><span>Falls <b>${pr.deaths}</b></span>
+        <span>Won <b style="color:var(--gold)">${coins(pr.gold)} ENTRO</b></span></div>
+    </div>
+    <div class="gearcol">
+      <div class="note" style="margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">Gear for the next run</div>
+      <div class="slots">${slot('weapon')}${slot('armor')}${slot('charm')}</div>
+      <p class="note" style="margin-top:10px">Gear is checked when your run is mined: you must still own it then.</p>
+    </div>
+  </div>`;
+}
+
+function updateGearPreview() {
+  const h = hero();
+  const box = $('derived');
+  if (!h || !box) return;
+  const show = (s, base) => {
+    const row = (k, label, suffix = '') => {
+      const d = s[k] - base[k];
+      return `<div><span>${label}</span><b>${s[k]}${suffix}${d > 0 ? `<span class="up">+${d}</span>` : ''}</b></div>`;
+    };
+    box.innerHTML = row('max_hp', 'HP') + row('atk', 'Attack') + row('def', 'Defence') + row('hit', 'Hit', '%')
+      + row('crit', 'Crit', '%') + row('dodge', 'Dodge', '%') + (s.spell ? row('spell', 'Fireball', '%') : '') + row('find', 'Loot find', '%');
+  };
+  show(h.stats, h.stats);
+  const gear = Object.values(gearSel(h));
+  if (!gear.length) return;
+  loadRules().then(() => {
+    if (hero()?.id !== h.id || !$('derived')) return;
+    show(callRules('questStats', { hero: heroInput(h), xp: h.progress.xp, gear }), h.stats);
+  }).catch(() => {});
+}
+
+// The hero as the rules expect it (the API view has extra fields).
+function heroInput(h) {
+  return { id: h.id, name: h.name, class: h.class, str: h.str, dex: h.dex, int: h.int, vit: h.vit, luck: h.luck,
+    starborn: h.starborn, seed: h.seed, summon_tx: h.summon_tx };
+}
+
+function dungeonsHTML() {
+  const h = hero();
+  return `<h2 class="sec">Dungeons <small>one block decides the whole run</small></h2>
+  <div class="dungeons">${S.cfg.dungeons.map((d) => {
+    const gap = h.level - d.level;
+    const risk = gap >= 0 ? ['ok', 'Fair fight'] : gap >= -3 ? ['hard', 'Risky'] : ['deadly', 'Deadly'];
+    const art = DUNGEON_ART[d.id] || DUNGEON_ART[1];
+    return `<div class="dg" style="--tint:${art.tint}">
+      <div class="emo" aria-hidden="true">${art.emo}</div>
+      <h3>${esc(d.name)}</h3>
+      <p>${esc(d.blurb)}</p>
+      <div class="meta"><span>Level ${d.level}+ · boss ${FOE_ICON[d.boss] || ''}</span><span class="risk ${risk[0]}">${risk[1]}</span></div>
+      <div class="meta"><span>Win up to <b>${coins(d.fee * 3)}</b></span></div>
+      <button class="btn" data-run="${d.id}">Enter · ${coins(d.fee)} ENTRO</button>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function inventoryAndRunsHTML() {
+  const items = ownedItems();
+  const runs = S.player.runs;
+  const rejects = S.player.rejects || [];
+  return `<div class="cols">
+    <div><h2 class="sec">Inventory <small>${items.length} item${items.length === 1 ? '' : 's'} · NFTs you can trade</small></h2>
+      <div class="panel list">${items.length ? items.map((i) => `<div class="row">
+        <span class="ico">${SLOT_ICON[i.slot]}</span>
+        <div class="main"><b class="rar${i.rarity}">${esc(i.name)}</b><span>${RARITY[i.rarity]} ${esc(i.slot)} · tier ${i.tier} · power ${i.power}${i.minted ? '' : ' · minting…'}</span></div>
+      </div>`).join('') : '<div class="empty">No loot yet. Chests and bosses drop items.</div>'}</div>
+    </div>
+    <div><h2 class="sec">Your runs <small>click to replay & verify</small></h2>
+      <div class="panel list">${runs.length || rejects.length ? runs.map((r) => runRowHTML(r, true)).join('')
+        + rejects.map((r) => `<div class="row"><span class="ico">↩️</span><div class="main"><b>Refunded</b><span>${esc(r.reason)} · block ${fmt(r.height)}</span></div></div>`).join('')
+        : '<div class="empty">No runs yet. Pick a dungeon above.</div>'}</div>
+    </div>
+  </div>`;
+}
+
+function runRowHTML(r, mine) {
+  const d = S.cfg.dungeons.find((x) => x.id === r.dungeon);
+  const icon = r.cleared ? '🏆' : r.survived ? '🚪' : '💀';
+  const what = r.cleared ? 'Cleared' : r.survived ? 'Escaped' : 'Fell in';
+  return `<div class="row click" data-replay="${esc(r.tx)}" tabindex="0" role="button">
+    <span class="ico">${icon}</span>
+    <div class="main"><b>${mine ? '' : esc(r.hero_name) + ' · '}${what} ${esc(d ? d.name : '?')}</b>
+      <span>${mine ? esc(r.hero_name) + ' · ' : CLASS_ICON[r.class] + ' '}+${fmt(r.xp)} XP${r.items ? ` · ${r.items} item${r.items > 1 ? 's' : ''}` : ''} · block ${fmt(r.height)}</span></div>
+    <span class="amt ${r.payout ? 'win' : ''}">${r.payout ? '+' + coins(r.payout) : '0'}</span>
+  </div>`;
+}
+
+function worldHTML() {
+  const c = S.cfg;
+  return `<div class="cols">
+    <div><h2 class="sec">Hall of heroes</h2>
+      <div class="panel list">${S.board.length ? S.board.slice(0, 10).map((h, i) => `<div class="row">
+        <span class="lb-rank">${i + 1}</span>${portraitSVG(h, 30)}
+        <div class="main"><b>${esc(h.name)}</b><span>${CLASS_ICON[h.class]} level ${h.level} ${esc(h.class)} · ${h.progress.clears} boss kills</span></div>
+        <span class="amt win">${coins(h.progress.gold)}</span></div>`).join('') : '<div class="empty">No heroes yet. Be the first.</div>'}</div>
+    </div>
+    <div><h2 class="sec">Latest expeditions</h2>
+      <div class="panel list">${S.activity.length ? S.activity.slice(0, 10).map((r) => runRowHTML(r, false)).join('') : '<div class="empty">Quiet in the dungeons…</div>'}</div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:18px">Game treasury: <b style="color:var(--gold)">${coins(c.treasury)} ENTRO</b> ·
+    ${fmt(c.heroes)} heroes · ${fmt(c.runs)} runs · ${fmt(c.items)} items ·
+    game address <a href="${EXPLORER}/address/${esc(c.game_address)}" target="_blank" rel="noopener">${esc(short(c.game_address, 8))}</a> ·
+    rules v${c.rules_version}${c.synced ? '' : ' · <span style="color:var(--gold)">game master catching up…</span>'}</p>`;
+}
+
+function wire() {
+  $('b-conn2')?.addEventListener('click', connect);
+  $('b-summon')?.addEventListener('click', summon);
+  document.querySelectorAll('[data-hero]').forEach((b) => b.addEventListener('click', () => { S.heroId = b.dataset.hero; render(); }));
+  document.querySelectorAll('select[data-slot]').forEach((s) => s.addEventListener('change', () => {
+    const h = hero();
+    const g = store.get('eq_gear_' + h.id, {});
+    g[s.dataset.slot] = s.value || undefined;
+    store.set('eq_gear_' + h.id, g);
+    render();
+  }));
+  document.querySelectorAll('[data-run]').forEach((b) => b.addEventListener('click', () => startRun(Number(b.dataset.run))));
+  document.querySelectorAll('[data-replay]').forEach((r) => {
+    const go = () => openRun(r.dataset.replay, false);
+    r.addEventListener('click', go);
+    r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
+// ─── Actions ───
+async function summon() {
+  try {
+    const tx = await pay(S.cfg.summon_fee, { action: 'summon' }, 'Summoning a hero');
+    watchTx(tx, 'summon');
+  } catch (e) { toast(e.message, true); }
+}
+
+async function startRun(id) {
+  const h = hero();
+  const d = S.cfg.dungeons.find((x) => x.id === id);
+  if (!h.minted) { toast('Your hero is still being minted. Try again in a moment.', true); return; }
+  const gear = Object.values(gearSel(h)).map((i) => i.id);
+  try {
+    const tx = await pay(d.fee, { action: 'run', hero: h.id, dungeon: d.id, gear }, `${h.name} → ${d.name}`);
+    watchTx(tx, 'run', { hero: h, dungeon: d });
+  } catch (e) { toast(e.message, true); }
+}
+
+// ─── Overlay ───
+function openOverlay(html) {
+  closeOverlay();
+  const root = $('overlay-root');
+  root.innerHTML = `<div class="overlay" role="dialog" aria-modal="true"><div class="ov">${html}<button class="x" id="ov-x" aria-label="Close">×</button></div></div>`;
+  const close = () => closeOverlay();
+  $('ov-x').addEventListener('click', close);
+  root.querySelector('.overlay').addEventListener('click', (e) => { if (e.target.classList.contains('overlay')) close(); });
+  document.addEventListener('keydown', escClose);
+  S.overlay = { token: Symbol('ov') };
+  return S.overlay.token;
+}
+function escClose(e) { if (e.key === 'Escape') closeOverlay(); }
+function closeOverlay() {
+  $('overlay-root').innerHTML = '';
+  document.removeEventListener('keydown', escClose);
+  S.overlay = null;
+  refreshPlayer().then(render);
+}
+const live = (token) => S.overlay && S.overlay.token === token;
+
+// Follows a transaction from the wallet to its result.
+async function watchTx(tx, kind, ctx = {}) {
+  const token = openOverlay(`<h3>${kind === 'summon' ? '✨ Summoning…' : `${DUNGEON_ART[ctx.dungeon.id].emo} ${esc(ctx.hero.name)} sets out for ${esc(ctx.dungeon.name)}`}</h3>
+    <div class="sub">transaction <a href="${EXPLORER}/tx/${esc(tx)}" target="_blank" rel="noopener">${esc(short(tx, 10))}</a></div>
+    <div class="phases" id="phases">
+      <div class="phase done" id="ph1"><span class="pi">✓</span>Signed in your wallet and sent</div>
+      <div class="phase now" id="ph2"><span class="pi"></span><span>Waiting for a miner to put it in a block <span class="note">(about 30 s)</span></span></div>
+      <div class="phase" id="ph3"><span class="pi"></span><span>Waiting for the <b>next</b> block — its beacon decides everything</span></div>
+      <div class="phase" id="ph4"><span class="pi"></span><span>The game master reads the result</span></div>
+    </div>
+    <p class="note">You can close this window: the result will be in “Your runs”.</p>`);
+  const setPhase = (n) => {
+    for (let i = 2; i <= 4; i++) {
+      const el = $('ph' + i);
+      if (!el) return;
+      el.className = 'phase ' + (i < n ? 'done' : i === n ? 'now' : '');
+      el.querySelector('.pi').textContent = i < n ? '✓' : '';
+    }
+  };
+  for (let tries = 0; tries < 400 && live(token); tries++) {
+    try {
+      const st = await api('/tx/' + tx);
+      if (st.status === 'run') { dropPending(tx); await refreshPlayer(); if (live(token)) playRun(st.run, token); return; }
+      if (st.status === 'summon') { dropPending(tx); await refreshPlayer(); if (live(token)) revealHero(st.hero, token); return; }
+      if (st.status === 'refund') {
+        dropPending(tx);
+        $('phases').insertAdjacentHTML('afterend', `<div class="verify"><span class="bad">↩️ Refunded:</span> ${esc(st.reject.reason)}. Your ENTRO is on its way back.</div>`);
+        setPhase(5);
+        return;
+      }
+      const mp = await rpc('/rpc/mempool').catch(() => ({ tx_hashes: [] }));
+      setPhase(mp.tx_hashes.includes(tx) ? 2 : (st.tip > st.height + 1 ? 4 : 3));
+    } catch { /* keep trying */ }
+    await sleep(3000);
+  }
+}
+function dropPending(tx) {
+  S.pending = S.pending.filter((p) => p.tx !== tx);
+  store.set('eq_pending', S.pending);
+}
+
+function revealHero(h, token) {
+  if (!live(token)) return;
+  S.heroId = h.id;
+  document.querySelector('.ov').innerHTML = `<button class="x" id="ov-x" aria-label="Close">×</button>
+    <div class="reveal">
+      ${portraitSVG(h, 200)}
+      <h3>${esc(h.name)}</h3>
+      <div class="cls muted" style="letter-spacing:.12em;text-transform:uppercase">${CLASS_ICON[h.class]} ${esc(h.class)}${h.starborn ? ' · <span style="color:var(--gold)">✨ Starborn!</span>' : ''}</div>
+      <div class="statgrid" style="width:min(420px,100%);margin-top:8px">${[['STR', h.str], ['DEX', h.dex], ['INT', h.int], ['VIT', h.vit], ['LUCK', h.luck]].map(([k, v]) =>
+        `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('')}</div>
+      <p class="note" style="max-width:520px">${CLASS_BLURB[h.class]} Rolled from the beacon of block ${fmt(h.born + 1)}. The hero NFT is on its way to your wallet.</p>
+      <button class="btn" id="ov-go">Choose a dungeon</button>
+    </div>`;
+  $('ov-x').addEventListener('click', closeOverlay);
+  $('ov-go').addEventListener('click', closeOverlay);
+}
+
+// ─── Run replay ───
+async function openRun(tx) {
+  const token = openOverlay('<div class="empty">Loading the run…</div>');
+  try {
+    const st = await api('/tx/' + tx);
+    if (st.status === 'run' && live(token)) playRun(st.run, token, true);
+  } catch (e) { toast(e.message, true); }
+}
+
+function playRun(rec, token, fromHistory = false) {
+  const d = S.cfg.dungeons.find((x) => x.id === rec.dungeon);
+  const res = rec.result;
+  const h = rec.hero;
+  const maxHP = res.stats.max_hp;
+  let fast = false;
+  const wait = (ms) => (fast ? Promise.resolve() : sleep(ms));
+  document.querySelector('.ov').innerHTML = `<button class="x" id="ov-x" aria-label="Close">×</button>
+    <h3>${DUNGEON_ART[d.id].emo} ${esc(d.name)}</h3>
+    <div class="sub">${esc(h.name)} · level ${res.stats.level} ${esc(h.class)} · decided by the beacon of block ${fmt(rec.beacon_height)}</div>
+    <div class="path" id="path">${[1, 2, 3, 4, 5].map((i) => `${i > 1 ? '<span class="link"></span>' : ''}<span class="node" id="nd${i}">?</span>`).join('')}</div>
+    <div class="arena">
+      <div class="fighter" id="f-hero"><div class="face">${portraitSVG(h, 66)}</div><div class="who">${esc(h.name)}</div>
+        <div class="hpbar"><i id="hp-hero" style="width:100%"></i></div><div class="hpnum" id="hpn-hero">${maxHP} / ${maxHP}</div></div>
+      <div class="vs">vs</div>
+      <div class="fighter" id="f-foe"><div class="face" id="foe-face">🚪</div><div class="who" id="foe-name">Entering…</div>
+        <div class="hpbar" id="foe-bar" style="visibility:hidden"><i id="hp-foe" style="width:100%"></i></div><div class="hpnum" id="hpn-foe"></div></div>
+    </div>
+    <div class="log" id="log" aria-live="polite"></div>
+    <div class="bar"><span class="note">${fromHistory ? 'Replaying a past run' : 'Live from the chain'}</span>
+      <button class="btn ghost small" id="b-skip">Skip to the end ⏭</button></div>
+    <div id="after"></div>`;
+  $('ov-x').addEventListener('click', closeOverlay);
+  $('b-skip').addEventListener('click', () => { fast = true; });
+
+  const log = (html, cls = '') => { const el = $('log'); if (!el) return; el.insertAdjacentHTML('beforeend', `<div class="${cls}">${html}</div>`); el.scrollTop = el.scrollHeight; };
+  const setHP = (who, hp, max) => {
+    const bar = $('hp-' + who); if (!bar) return;
+    const p = Math.max(0, hp) / max * 100;
+    bar.style.width = p + '%';
+    bar.className = p < 30 ? 'low' : '';
+    $('hpn-' + who).textContent = `${Math.max(0, hp)} / ${max}`;
+  };
+  const pop = (who, text, cls) => {
+    if (fast) return;
+    const f = $('f-' + who); if (!f) return;
+    f.classList.remove('shake'); void f.offsetWidth;
+    if (cls === 'dmg' || cls === 'crit' || cls === 'spell') f.classList.add('shake');
+    f.insertAdjacentHTML('beforeend', `<span class="float ${cls}">${text}</span>`);
+    const fl = f.lastElementChild;
+    setTimeout(() => fl.remove(), 900);
+  };
+
+  (async () => {
+    for (const ev of res.events) {
+      if (!live(token)) return;
+      for (let i = 1; i <= 5; i++) {
+        const n = $('nd' + i); if (!n) return;
+        if (i < ev.room) n.className = 'node past';
+      }
+      const node = $('nd' + ev.room);
+      node.textContent = ROOM_ICON[ev.kind];
+      node.className = 'node on';
+      const foeBar = $('foe-bar');
+      const face = $('foe-face'), name = $('foe-name');
+      if (ev.kind === 'monster' || ev.kind === 'boss') {
+        face.textContent = FOE_ICON[ev.name] || '👹';
+        name.textContent = (ev.kind === 'boss' ? '☠️ ' : '') + ev.name;
+        foeBar.style.visibility = 'visible';
+        setHP('foe', ev.foe_hp, ev.foe_hp);
+        log(`Room ${ev.room}: <b>${esc(ev.name)}</b>${ev.kind === 'boss' ? ' — the boss!' : ''} (${ev.foe_hp} HP)`);
+        await wait(500);
+        for (const s of ev.swings) {
+          if (!live(token)) return;
+          if (s.hero) {
+            const label = { miss: 'MISS', crit: `CRIT −${s.dmg}`, spell: `🔥 −${s.dmg}`, volley: `🏹 −${s.dmg}`, ambush: `🗡️ −${s.dmg}` }[s.kind] || `−${s.dmg}`;
+            pop('foe', label, s.kind === 'miss' ? 'miss' : s.kind === 'crit' ? 'crit' : s.kind === 'spell' ? 'spell' : 'dmg');
+            setHP('foe', s.foe_hp ?? 0, ev.foe_hp);
+            if (s.kind === 'crit') log(`💥 Critical hit for <b>${s.dmg}</b>!`, 'good');
+            if (s.kind === 'spell') log(`🔥 Fireball for <b>${s.dmg}</b>.`, 'good');
+          } else {
+            pop('hero', s.kind === 'miss' ? 'DODGE' : s.kind === 'block' ? `🛡️ −${s.dmg}` : `−${s.dmg}`, s.kind === 'miss' ? 'miss' : 'dmg');
+            setHP('hero', s.hero_hp, maxHP);
+          }
+          await wait(s.hero ? 380 : 330);
+        }
+        if (ev.won) log(`✔ Defeated the ${esc(ev.name)}.`, 'good');
+        else if (ev.hp > 0) log(`The ${esc(ev.name)} slinks away. No reward.`);
+      } else if (ev.kind === 'trap') {
+        foeBar.style.visibility = 'hidden';
+        face.textContent = '⚠️'; name.textContent = ev.name;
+        $('hpn-foe').textContent = `d20 + DEX = ${ev.roll} vs ${ev.target}`;
+        await wait(700);
+        if (ev.won) { pop('hero', 'DODGED', 'miss'); log(`Room ${ev.room}: <b>${esc(ev.name)}</b> — rolled ${ev.roll} vs ${ev.target}, dodged it.`, 'good'); }
+        else { pop('hero', `−${ev.dmg}`, 'dmg'); setHP('hero', ev.hp, maxHP); log(`Room ${ev.room}: <b>${esc(ev.name)}</b> — rolled ${ev.roll} vs ${ev.target}, took ${ev.dmg} damage.`, 'bad'); }
+      } else if (ev.kind === 'chest') {
+        foeBar.style.visibility = 'hidden';
+        face.textContent = '🧰'; name.textContent = ev.name; $('hpn-foe').textContent = '';
+        await wait(500);
+        log(`Room ${ev.room}: <b>${esc(ev.name)}</b> — found treasure.`);
+      } else if (ev.kind === 'shrine') {
+        foeBar.style.visibility = 'hidden';
+        face.textContent = '⛲'; name.textContent = ev.name; $('hpn-foe').textContent = '';
+        await wait(500);
+        const heal = ev.heal ?? 0;  // Go omits a zero heal
+        if (heal) pop('hero', `+${heal}`, 'heal');
+        setHP('hero', ev.hp, maxHP);
+        log(`Room ${ev.room}: <b>${esc(ev.name)}</b> — ${heal ? `healed ${heal} HP` : 'already at full health'}.`, 'good');
+      }
+      if (ev.gold) { pop('foe', `+${coins(ev.gold)}`, 'gold'); log(`💰 ${coins(ev.gold)} ENTRO`, 'loot'); }
+      if (ev.item) log(`<span class="rar${ev.item.rarity}">${SLOT_ICON[ev.item.slot]} ${esc(ev.item.name)}</span> (${RARITY[ev.item.rarity]})`, 'loot');
+      setHP('hero', ev.hp, maxHP);
+      if (ev.hp <= 0) { node.className = 'node dead'; node.textContent = '💀'; log(`💀 <b>${esc(h.name)}</b> fell and crawled out with half the gold.`, 'bad'); break; }
+      await wait(650);
+    }
+    if (live(token)) showSummary(rec, token);
+  })();
+}
+
+function showSummary(rec, token) {
+  const res = rec.result;
+  const before = levelOf(rec.progress_before.xp), after = levelOf(rec.progress_before.xp + res.xp);
+  const verdict = res.cleared ? '🏆 Dungeon cleared!' : res.survived ? '🚪 Made it out alive' : '💀 Fell in battle';
+  $('b-skip')?.remove();
+  $('after').innerHTML = `
+    <h3 style="margin-top:16px">${verdict}</h3>
+    <div class="summary">
+      <div class="sum"><b class="gold">${coins(res.payout)}</b><span>ENTRO won</span></div>
+      <div class="sum"><b>+${fmt(res.xp)}</b><span>XP</span></div>
+      <div class="sum"><b>${res.items.length}</b><span>item${res.items.length === 1 ? '' : 's'}</span></div>
+    </div>
+    ${!res.survived && res.found ? `<p class="note" style="margin-top:8px">Found ${coins(res.found)} ENTRO but dropped half while fleeing.</p>` : ''}
+    ${after > before ? `<div class="levelup">⬆ Level up! ${esc(rec.hero.name)} is now level ${after}</div>` : ''}
+    ${res.items.length ? `<div class="loot">${res.items.map((i) => `<div class="lootcard rar${i.rarity}"><span class="ico">${SLOT_ICON[i.slot]}</span>
+      <div><b>${esc(i.name)}</b><span>${RARITY[i.rarity]} ${esc(i.slot)} · power ${i.power}</span></div></div>`).join('')}</div>` : ''}
+    <div class="outs" id="outs">${outputsHTML(rec)}</div>
+    <div class="bar">
+      <button class="btn ghost small" id="b-verify">🔍 Verify this run in my browser</button>
+      <button class="btn small" id="b-done">Back to the map</button>
+    </div>
+    <div id="verify-box"></div>`;
+  $('b-done').addEventListener('click', closeOverlay);
+  $('b-verify').addEventListener('click', () => verifyRun(rec));
+  // Keep the delivery status fresh while the summary is open.
+  (async () => {
+    while (live(token) && rec.outputs.some((o) => !o.height)) {
+      await sleep(4000);
+      try { const st = await api('/tx/' + rec.tx); if (st.run) { rec.outputs = st.run.outputs; const el = $('outs'); if (el) el.innerHTML = outputsHTML(rec); } } catch { /* retry */ }
+    }
+  })();
+}
+
+function outputsHTML(rec) {
+  if (!rec.outputs?.length) return '<span>Nothing to pay out this time.</span>';
+  return rec.outputs.map((o) => `<span>${o.height ? '✔' : '⏳'} ${o.kind === 'payout' ? 'ENTRO payout' : o.kind === 'item' ? 'Item NFT' : o.kind}
+    ${o.height ? `in block ${fmt(o.height)}` : 'on its way'} · <a href="${EXPLORER}/tx/${esc(o.hash)}" target="_blank" rel="noopener">${esc(short(o.hash, 8))}</a></span>`).join('');
+}
+
+// ─── Verification: rerun the game master's code here and compare ───
+async function sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
+const hexb = (h) => Uint8Array.from(h.match(/../g), (x) => parseInt(x, 16));
+const bhex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+function sameJSON(a, b) {
+  if (a === b) return true;
+  if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const ka = Object.keys(a), kb = Object.keys(b);
+  return ka.length === kb.length && ka.every((k) => sameJSON(a[k], b[k]));
+}
+
+async function verifyRun(rec) {
+  const box = $('verify-box');
+  box.innerHTML = '<div class="verify">Checking…</div>';
+  const lines = [];
+  try {
+    // 1. The beacon really is SHA256d("entropy" ‖ hash of the block after the run).
+    const blk = await rpc('/rpc/entropy/' + rec.beacon_height);
+    const pre = new Uint8Array([...new TextEncoder().encode('entropy'), ...hexb(blk.block_hash)]);
+    const beacon = bhex(await sha256(await sha256(pre)));
+    const okB = beacon === rec.beacon && blk.block_hash === rec.beacon_block_hash;
+    lines.push(`${okB ? '<span class="ok">✔</span>' : '<span class="bad">✗</span>'} Block ${fmt(rec.beacon_height)} on the chain has hash <code>${esc(short(blk.block_hash, 12))}</code>; your browser hashed it into the beacon <code>${esc(short(beacon, 12))}</code>${okB ? ', the same one the game used.' : ', which does NOT match the game.'}`);
+    // 2. Running the rules here gives the same expedition.
+    await loadRules();
+    const mine = callRules('questRun', { hero: rec.hero, progress: rec.progress_before, gear: rec.gear, dungeon: rec.dungeon, beacon: rec.beacon, tx: rec.tx });
+    const okR = sameJSON(mine, rec.result);
+    lines.push(`${okR ? '<span class="ok">✔</span>' : '<span class="bad">✗</span>'} Your browser replayed the run with the game master's own code (rules v${window.questRulesVersion}): ${okR ? `identical — ${mine.events.length} rooms, ${coins(mine.payout)} ENTRO, ${mine.items.length} item(s).` : 'the results DIFFER.'}`);
+    lines.push(`<span class="muted">Inputs: run transaction <a href="${EXPLORER}/tx/${esc(rec.tx)}" target="_blank" rel="noopener">${esc(short(rec.tx, 10))}</a> (block ${fmt(rec.height)}), hero ${esc(rec.hero.id)} with ${fmt(rec.progress_before.xp)} XP from earlier runs, ${rec.gear.length} gear item(s). Nobody knew block ${fmt(rec.beacon_height)}'s hash when this run was sent.</span>`);
+  } catch (e) {
+    lines.push(`<span class="bad">Could not finish the check: ${esc(e.message)}</span>`);
+  }
+  box.innerHTML = `<div class="verify">${lines.map((l) => `<div style="margin:4px 0">${l}</div>`).join('')}</div>`;
+}
+
+// ─── Boot ───
+(async function boot() {
+  const s = document.createElement('script');
+  s.src = new URL('connect.js', WALLET).href;
+  document.head.appendChild(s);
+  await refreshPublic();
+  await refreshPlayer();
+  render();
+  for (const p of S.pending) if (Date.now() - p.at < 3600e3) { watchTx(p.tx, p.label.startsWith('Summon') ? 'summon' : 'run', { hero: { name: 'Your hero' }, dungeon: { id: 1, name: 'the dungeon' } }); break; }
+  setInterval(async () => {
+    await refreshPublic();
+    await refreshPlayer();
+    renderAccount();
+    if (!S.overlay && dataKey() !== lastKey) render();
+  }, 10000);
+})();
+</script>
+</body>
+</html>
