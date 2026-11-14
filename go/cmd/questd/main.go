@@ -274,6 +274,7 @@ func (s *server) ensureCollections() bool {
 		}
 		if err != nil && !strings.Contains(err.Error(), "already") {
 			log.Printf("creating collection %s: %v", c.id, err)
+			delete(s.created, c.id) // try again next round (e.g. once funded)
 		} else {
 			log.Printf("creating collection %s; waiting for it to be mined", c.id)
 		}

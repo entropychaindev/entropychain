@@ -26,7 +26,7 @@ ExecStart=/home/entropy/bin/questd \
     --listen 127.0.0.1:8095 \
     --wallet /home/entropy/data/quest-wallet.json \
     --site https://entropychain.io/quest/ \
-    --start START_HEIGHT
+    --start 89911
 Restart=on-failure
 RestartSec=5
 Nice=5
